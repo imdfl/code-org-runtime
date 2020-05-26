@@ -8,13 +8,6 @@ import * as NodeUtils from "util";
 
 require('source-map-support').install();
 
-interface IListRecord {
-	name: string;
-	url: string;
-	author: string
-	lastModification: Date
-}
-
 class CodeHost {
 
 	private app: Application;
@@ -44,6 +37,16 @@ class CodeHost {
 		app.use(express.json());
 		app.use(express.urlencoded({ extended: false }));
 		app.use(cookieParser());
+
+		app.use(function (req: Request, res: Response, next: NextFunction) {
+			const origin: string = String(req.headers.origin) || "";
+			res.setHeader('Access-Control-Allow-Origin', origin);
+			res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+			res.setHeader("Access-Control-Allow-Headers", "Origin, Authorization, X-Requested-With, Accept-Encoding, Content-Type, Accept, X-XSRF-Header, X-CSRF-Header, X-CSRF-Token, X-XSRF-Token, Cache-Control, Pragma, Expires");
+			// res.end();
+			next();
+		});		
+
 		app.use(express.static(path.join(__dirname, 'public')));
 		app.use('/client', express.static('client'));
 		app.use('/dev', express.static('dev'));
@@ -163,14 +166,17 @@ class CodeHost {
 	private _apiRouter: express.Router;
 	private _renderedPath: string;
 	private _scriptsPath: string;
+	private _dataPath: string;
 
 	private installAPI(app: Application): void {
 		this._renderedPath = fsPath.join(__dirname, "rendered");
-		this._scriptsPath = fsPath.join(__dirname, "data", "scripts");
+		this._dataPath = fsPath.join(__dirname, "data");
+		this._scriptsPath = fsPath.join(this._dataPath, "scripts");
 		fs.mkdirSync(this._renderedPath, { recursive: true });
 
 		const r = this._scriptRouter = express.Router();
 		r.get("/:name", this.serveScript.bind(this));
+		r.get("/raw/:name", this.serveRawScript.bind(this));
 		app.use("/scripts", r);
 
 		const api = this._apiRouter = express.Router();
@@ -183,7 +189,7 @@ class CodeHost {
 
 		var recs = await this.listFolder(this._scriptsPath);
 
-		return res.status(200).contentType("application/javascript")
+		return res.status(200).contentType("application/json")
 			.send({
 				error: "",
 				data: recs
@@ -193,6 +199,17 @@ class CodeHost {
 	private async serveScript(req: Request, res: Response, next: NextFunction): Promise<any> {
 		const scriptPath = req.params["name"];
 		var script = await this.loadScript(scriptPath);
+		if (!script) {
+			return res.status(404).send(`${scriptPath} not found`).end();
+		}
+
+		return res.status(200).contentType("application/javascript")
+			.send(script).end();
+	}
+
+	private async serveRawScript(req: Request, res: Response, next: NextFunction): Promise<any> {
+		const scriptPath = req.params["name"];
+		var script = await this.loadRawScript(scriptPath);
 		if (!script) {
 			return res.status(404).send(`${scriptPath} not found`).end();
 		}
@@ -220,7 +237,7 @@ class CodeHost {
 			return null;
 		}
 	}
-	private async listFolder(url: string): Promise<IListRecord[]> {
+	private async listFolder(url: string): Promise<IScriptRecord[]> {
 		const fileNames = await NodeUtils.promisify(fs.readdir)(url);
 
 		return fileNames.map(f => ({
@@ -241,6 +258,16 @@ class CodeHost {
 		}
 	}
 
+	private async loadRawScript(name: string): Promise<string> {
+		name = (name || "").trim().replace(/\.js$/i, "");
+		if (!name) {
+			return "";
+		}
+		const scriptPath = fsPath.join(this._scriptsPath, `${name}.js` );
+		return await this.readFile(scriptPath);
+
+	}
+
 	/**
 	 * 
 	 * @param name already .js free
@@ -248,13 +275,12 @@ class CodeHost {
 	 */
 	private async renderScript(name: string, renderedPath: string): Promise<string> {
 		try {
-			const scriptPath = fsPath.join(this._scriptsPath, `${name}.js` );
-			const script = await this.readFile(scriptPath);
+			const script = await this.loadRawScript(name);
 			if (!script) {
 				return null;
 			}
-			const headerPath = fsPath.join(this._scriptsPath, "../script-header.js" );
-			const footerPath = fsPath.join(this._scriptsPath, "../script-footer.js" );
+			const headerPath = fsPath.join(this._dataPath, "script-header.js" );
+			const footerPath = fsPath.join(this._dataPath, "script-footer.js" );
 			const header = await this.readFile(headerPath);
 			const footer = await this.readFile(footerPath);
 			const ret = [header, script, footer].join('\n');
