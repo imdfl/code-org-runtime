@@ -16,6 +16,7 @@
       "dom"
     ]
   },
+  "exclude": ["**/*.orig.*"],
   "angularCompilerOptions": {
     "fullTemplateTypeCheck": true,
     "strictInjectionParameters": true

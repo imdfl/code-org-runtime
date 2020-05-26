@@ -1,2 +1,4 @@
 /server/rendered
 /server/*.map
+/server/client
+/server/dev

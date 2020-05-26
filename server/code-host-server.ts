@@ -8,6 +8,13 @@ import * as NodeUtils from "util";
 
 require('source-map-support').install();
 
+interface IListRecord {
+	name: string;
+	url: string;
+	author: string
+	lastModification: Date
+}
+
 class CodeHost {
 
 	private app: Application;
@@ -38,6 +45,8 @@ class CodeHost {
 		app.use(express.urlencoded({ extended: false }));
 		app.use(cookieParser());
 		app.use(express.static(path.join(__dirname, 'public')));
+		app.use('/client', express.static('client'));
+		app.use('/dev', express.static('dev'));
 
 		app.use('/', indexRouter);
 		app.use('/users', usersRouter);
@@ -145,20 +154,40 @@ class CodeHost {
 		  var bind = typeof addr === 'string'
 			? 'pipe ' + addr
 			: 'port ' + addr.port;
-		  debug('Listening on ' + bind);
+		  console.log('Listening on ' + bind);
 		}
 		
 	}
 
+	private _scriptRouter: express.Router;
 	private _apiRouter: express.Router;
 	private _renderedPath: string;
+	private _scriptsPath: string;
+
 	private installAPI(app: Application): void {
 		this._renderedPath = fsPath.join(__dirname, "rendered");
+		this._scriptsPath = fsPath.join(__dirname, "data", "scripts");
 		fs.mkdirSync(this._renderedPath, { recursive: true });
-		const r = this._apiRouter = express.Router();
-		app.use("/scripts", r);
-		r.get("/:name", this.serveScript.bind(this));
 
+		const r = this._scriptRouter = express.Router();
+		r.get("/:name", this.serveScript.bind(this));
+		app.use("/scripts", r);
+
+		const api = this._apiRouter = express.Router();
+		api.get("/list", this.listScripts.bind(this));
+		app.use("/api", api);
+
+	}
+
+	private async listScripts(req: Request, res: Response, next: NextFunction): Promise<any> {
+
+		var recs = await this.listFolder(this._scriptsPath);
+
+		return res.status(200).contentType("application/javascript")
+			.send({
+				error: "",
+				data: recs
+			}).end();
 	}
 
 	private async serveScript(req: Request, res: Response, next: NextFunction): Promise<any> {
@@ -178,7 +207,7 @@ class CodeHost {
 		}
 		try {
 			name = name.replace(/\.js$/i, "");
-			const fullPath = fsPath.join(__dirname, "rendered", `${name}.js`);
+			const fullPath = fsPath.join(this._renderedPath, `${name}.js`);
 			const script = await this.readFile(fullPath);
 			if (script) {
 				return script;
@@ -191,6 +220,16 @@ class CodeHost {
 			return null;
 		}
 	}
+	private async listFolder(url: string): Promise<IListRecord[]> {
+		const fileNames = await NodeUtils.promisify(fs.readdir)(url);
+
+		return fileNames.map(f => ({
+			name: f,
+			url: f,
+			author: f,
+			lastModification: new Date()
+		}));
+	}
 
 	private async readFile(path: string): Promise<string> {
 		try {
@@ -200,8 +239,6 @@ class CodeHost {
 		catch (e) {
 			return null;
 		}
-
-
 	}
 
 	/**
@@ -211,13 +248,13 @@ class CodeHost {
 	 */
 	private async renderScript(name: string, renderedPath: string): Promise<string> {
 		try {
-			const scriptPath = fsPath.join(__dirname, "data", "scripts", `${name}.js` );
+			const scriptPath = fsPath.join(this._scriptsPath, `${name}.js` );
 			const script = await this.readFile(scriptPath);
 			if (!script) {
 				return null;
 			}
-			const headerPath = fsPath.join(__dirname, "data", "script-header.js" );
-			const footerPath = fsPath.join(__dirname, "data", "script-footer.js" );
+			const headerPath = fsPath.join(this._scriptsPath, "../script-header.js" );
+			const footerPath = fsPath.join(this._scriptsPath, "../script-footer.js" );
 			const header = await this.readFile(headerPath);
 			const footer = await this.readFile(footerPath);
 			const ret = [header, script, footer].join('\n');
