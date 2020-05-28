@@ -1,0 +1,15 @@
+<div class="container-fluid">
+	<h1>Script {{ scriptData.name || 'unknown' }}</h1>
+	<div class="row">
+		<div class="col-sm-6 col-md-6 col-lg-6" style="background-color:rgb(214, 255, 214);">
+			<ngx-codemirror [(ngModel)]="scriptData.raw" [options]="{
+		  lineNumbers: true,
+		  theme: 'neo',
+		  mode: 'javascript'
+		}"></ngx-codemirror>
+		</div>
+		<div class="col-sm-6 col-md-6 col-lg-6" style="background-color:rgb(158, 231, 253);">
+			<p>{{ scriptData.rendered }}</p>
+		</div>
+	</div>
+</div>

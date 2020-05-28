@@ -2,7 +2,7 @@
 	"compileOnSave": true,
 	"compilerOptions": {
 		"target": "es2017",
-		"module": "commonjs",
+		"module": "CommonJS",
 		"lib": [
 			"es2017",
 			"es2015.collection",

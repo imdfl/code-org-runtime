@@ -6,3 +6,10 @@ interface IScriptRecord {
 	lastModification: Date
 }
 
+interface IScriptContent {
+	name: string,
+	url: string,
+	raw: string,
+	rendered: string
+}
+

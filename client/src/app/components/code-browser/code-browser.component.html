@@ -1,0 +1,8 @@
+<p>code-browser works!</p>
+<div class="sa">
+	<ul class="list-group">
+		<li class="list-group-item script-line" *ngFor="let s of scripts">
+			<a [routerLink]="'/script/' + s.name">{{ s.name }}</a>
+		</li>
+	  </ul>	  
+</div>

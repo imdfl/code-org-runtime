@@ -25,6 +25,19 @@ export class DalService {
 		return response.data;
 	}
 
+	public async loadScriptContent(name: string): Promise<IScriptContent> {
+		const url = this.makeUrl(`api/script/${name}`);
+		const request = this.http.get(url, {
+			responseType: "json"
+		}).toPromise();
+
+		const response: any = await request;
+		if (!response || response.error) {
+			return {} as IScriptContent;
+		}
+		return response.data;
+	}
+
 	private makeUrl(path: string): string {
 		return [this.serverUrl, path].join('/');
 	}

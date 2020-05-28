@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { DalService } from '../services/dal.service';
+import { DalService } from '@services/dal.service';
 
 @Component({
 	selector: 'app-code-browser',
@@ -7,18 +7,16 @@ import { DalService } from '../services/dal.service';
 	styleUrls: ['./code-browser.component.scss']
 })
 export class CodeBrowserComponent implements OnInit {
-	private _scripts: Array<string>;
+	private _scripts: Array<IScriptRecord>;
 
 	constructor(private dal: DalService) { }
 
 	async ngOnInit(): Promise<any> {
 		const scripts = await this.dal.listScripts();
-		if (scripts && scripts.length > 0) {
-			this._scripts = scripts.map(s => s.name);
-		}
+		this._scripts = (scripts || []).slice();
 	}
 
-	public get scripts(): string[] {
+	public get scripts(): IScriptRecord[] {
 		return this._scripts;
 	}
 

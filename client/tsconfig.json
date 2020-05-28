@@ -16,7 +16,10 @@
 			"dom"
 		],
 		"paths": {
-			"@common/*": ["../server/common/*"]
+			"@common/*": ["../server/common/*"],
+			"@services/*": ["./src/app/services/*"],
+			"@components/*": ["./src/app/components/*"],
+			"@app/*": ["./src/app/*"],
 		}
 	},
 

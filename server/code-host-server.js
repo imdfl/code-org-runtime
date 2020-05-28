@@ -5,6 +5,7 @@ const compression = require("compression");
 const fs = require("fs");
 const fsPath = require("path");
 const NodeUtils = require("util");
+const code_utils_1 = require("./utils/code-utils");
 require('source-map-support').install();
 class CodeHost {
     constructor() {
@@ -135,6 +136,9 @@ class CodeHost {
         app.use("/scripts", r);
         const api = this._apiRouter = express.Router();
         api.get("/list", this.listScripts.bind(this));
+        api.get("/script/:name", this.loadScriptData.bind(this));
+        api.post("/render"), this.renderOnce.bind(this);
+        ;
         app.use("/api", api);
     }
     async listScripts(req, res, next) {
@@ -143,6 +147,37 @@ class CodeHost {
             .send({
             error: "",
             data: recs
+        }).end();
+    }
+    async loadScriptData(req, res, next) {
+        const rawName = req.params["name"];
+        const name = code_utils_1.CodeUtils.makeScriptName(rawName);
+        const script = await this.loadScript(rawName);
+        if (!script) {
+            return res.status(404).send(`${rawName} not found`).end();
+        }
+        var raw = await this.loadRawScript(name);
+        return res.status(200).contentType("application/json")
+            .send({
+            error: "",
+            data: {
+                raw: raw,
+                rendered: script,
+                name: name,
+                url: `/scripts/{name}`
+            }
+        }).end();
+    }
+    async renderOnce(req, res, next) {
+        const rawScript = req.body && req.body.script;
+        if (!rawScript) {
+            return res.status(404).send("no script body provided").end();
+        }
+        var script = await this.renderScriptFromBody(rawScript);
+        return res.status(200).contentType("application/javascript")
+            .send({
+            error: "",
+            data: script
         }).end();
     }
     async serveScript(req, res, next) {
@@ -168,7 +203,7 @@ class CodeHost {
             return null;
         }
         try {
-            name = name.replace(/\.js$/i, "");
+            name = code_utils_1.CodeUtils.makeScriptName(name);
             const fullPath = fsPath.join(this._renderedPath, `${name}.js`);
             const script = await this.readFile(fullPath);
             if (script) {
@@ -184,12 +219,15 @@ class CodeHost {
     }
     async listFolder(url) {
         const fileNames = await NodeUtils.promisify(fs.readdir)(url);
-        return fileNames.map(f => ({
-            name: f,
-            url: f,
-            author: f,
-            lastModification: new Date()
-        }));
+        return fileNames.map(f => {
+            const name = code_utils_1.CodeUtils.makeScriptName(f);
+            return {
+                name: name,
+                url: `/scripts/${name}`,
+                author: "Nadan",
+                lastModification: new Date()
+            };
+        });
     }
     async readFile(path) {
         try {
@@ -201,7 +239,7 @@ class CodeHost {
         }
     }
     async loadRawScript(name) {
-        name = (name || "").trim().replace(/\.js$/i, "");
+        name = code_utils_1.CodeUtils.makeScriptName(name);
         if (!name) {
             return "";
         }
@@ -219,8 +257,8 @@ class CodeHost {
             if (!script) {
                 return null;
             }
-            const headerPath = fsPath.join(this._dataPath, "script-header.js");
-            const footerPath = fsPath.join(this._dataPath, "script-footer.js");
+            const headerPath = fsPath.join(this._dataPath, "script-header.jspart");
+            const footerPath = fsPath.join(this._dataPath, "script-footer.jspart");
             const header = await this.readFile(headerPath);
             const footer = await this.readFile(footerPath);
             const ret = [header, script, footer].join('\n');
@@ -230,6 +268,23 @@ class CodeHost {
                 }
             });
             return ret;
+        }
+        catch (e) {
+            return null;
+        }
+    }
+    /**
+     *
+     * @param name already .js free
+     * @param renderedPath
+     */
+    async renderScriptFromBody(body) {
+        try {
+            const headerPath = fsPath.join(this._dataPath, "script-header.jspart");
+            const footerPath = fsPath.join(this._dataPath, "script-footer.jspart");
+            const header = await this.readFile(headerPath);
+            const footer = await this.readFile(footerPath);
+            return [header, body, footer].join('\n');
         }
         catch (e) {
             return null;

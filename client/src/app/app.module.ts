@@ -13,19 +13,23 @@ import { AccordionModule } from 'ngx-bootstrap/accordion';
 import { BsDropdownModule } from 'ngx-bootstrap/dropdown';
 import { ModalModule } from 'ngx-bootstrap/modal';
 import { CollapseModule } from 'ngx-bootstrap/collapse';
-import { CodeBrowserComponent } from './code-browser/code-browser.component';
+import { CodeBrowserComponent } from '@components/code-browser/code-browser.component';
 import { HttpClientModule } from '@angular/common/http';
 import { DalService } from './services/dal.service';
+import { CodemirrorModule } from '@ctrl/ngx-codemirror';
+import { PlaygroundComponent } from '@components/playground/playground.component';
 
 @NgModule({
 	declarations: [
 		DFLAppComponent,
 		CodeBrowserComponent,
+		PlaygroundComponent
 	],
 	imports: [
 		BrowserModule,
 		HttpClientModule,
 		BrowserAnimationsModule,
+		CodemirrorModule,
 		// RouterModule,
 		CollapseModule.forRoot(),
 		CommonModule,
