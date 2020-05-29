@@ -2,3 +2,5 @@
 /server/*.map
 /server/client
 /server/dev
+node_modules
+

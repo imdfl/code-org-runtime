@@ -1,0 +1,11 @@
+{
+	"name": "dfl-sandbox",
+	"version": "0.0.0",
+	"private": true,
+	"dependencies": {},
+	"devDependencies": {
+		"@types/jquery": "^3.3.38",
+		"tslint": "~6.1.0",
+		"typescript": "~3.8.3"
+	}
+}

@@ -1,66 +1,57 @@
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
-	<a class="navbar-brand" href="#">Navbar</a>
-	<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup"
-		aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
-		<span class="navbar-toggler-icon"></span>
-	</button>
-	<div class="collapse navbar-collapse" id="navbarNavAltMarkup">
-		<div class="navbar-nav">
-			<a class="nav-item nav-link active" href="#">Home <span class="sr-only">(current)</span></a>
-			<a class="nav-item nav-link" href="#">Features</a>
-			<a class="nav-item nav-link" href="#">Pricing</a>
-			<a class="nav-item nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
+<div class="app-container">
+	<nav class="navbar navbar-expand-lg navbar-light bg-light">
+		<a class="navbar-brand" href="#">the Gameotinizer</a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup"
+			aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+			<div class="navbar-nav">
+				<a class="nav-item nav-link active" href="#">Home <span class="sr-only">(current)</span></a>
+				<a class="nav-item nav-link" href="#">Gallery</a>
+				<a class="nav-item nav-link" href="#">Pricing</a>
+			</div>
 		</div>
-	</div>
-</nav>
 
-
-<div class="wrapper">
-	<nav class="sidebar">
-		<ul class="list-unstyled components">
-			<li class="active">
-				<a href="#homeSubmenu" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">Home</a>
-				<ul class="collapse list-unstyled" id="homeSubmenu">
-					<li>
-						<a href="#">Home 1</a>
-					</li>
-					<li>
-						<a href="#">Home 2</a>
-					</li>
-					<li>
-						<a href="#">Home 3</a>
-					</li>
-				</ul>
-			</li>
-			<li>
-				<a routerLink="/browse" routerLinkActive="active">Browse</a>
-			</li>
-			<li>
-				<a href="#pageSubmenu" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">Pages</a>
-				<ul class="collapse list-unstyled" id="pageSubmenu">
-					<li>
-						<a href="#">Page 1</a>
-					</li>
-					<li>
-						<a href="#">Page 2</a>
-					</li>
-					<li>
-						<a href="#">Page 3</a>
-					</li>
-				</ul>
-			</li>
-			<li>
-				<a href="#">Portfolio</a>
-			</li>
-			<li>
-				<a href="#">Contact</a>
+		<form class="form-inline my-2 my-lg-0">
+			<input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+		</form>
+		<ul class="navbar-nav mr-auto">
+			<li class="nav-item active">
+				<a class="nav-link" href="#">Account</a>
 			</li>
 		</ul>
+
 	</nav>
 
-	<!-- Page Content -->
-	<div class="content">
-		<router-outlet></router-outlet>
-	</div>
 
+	<div class="wrapper">
+		<nav class="sidebar">
+			<ul class="list-unstyled components">
+				<li class="active">
+					<a href="#homeSubmenu" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">Home</a>
+					<ul class="collapse list-unstyled" id="homeSubmenu">
+						<li>
+							<a href="#">Home 1</a>
+						</li>
+						<li>
+							<a href="#">Home 2</a>
+						</li>
+						<li>
+							<a href="#">Home 3</a>
+						</li>
+					</ul>
+				</li>
+				<li>
+					<a routerLink="/browse" routerLinkActive="active">Browse</a>
+				</li>
+			</ul>
+		</nav>
+
+		<!-- Page Content -->
+		<div class="content">
+			<router-outlet></router-outlet>
+		</div>
+
+	</div>
 </div>

@@ -1,3 +1,23 @@
 .CodeMirror {
 	height: auto;
+	overflow: auto;
+}
+
+.playground-component-container {
+	height: 100%;
+}
+
+.playground-body {
+	display: flex;
+	flex-direction: row;
+	height: 100%;
+	overflow: hidden;
+
+	.editor-view {
+		height: auto;
+		overflow-y: scroll;
+		flex-basis: 50%;
+		flex-grow: 0;
+		flex-shrink: 0;
+	}
 }
