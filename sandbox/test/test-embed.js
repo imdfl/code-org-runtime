@@ -1,136 +1,7 @@
+import { SpriteWrapper } from '../emulator/sprite-wrapper.js';
+import { NoWorld } from "../emulator/no-world.js";
 $(() => {
-    const $root = $("#sandbox");
-    const sceneWidth = $root.width() || 400, sceneHeight = $root.height() || 400;
-    const scene = sjs.Scene({
-        w: sceneWidth,
-        h: sceneHeight,
-        parent: $root[0]
-    });
-    class SpriteWrapper {
-        constructor(x = 0, y) {
-            this._width = 0;
-            this._height = 0;
-            this.sprite = scene.Sprite();
-            this.sprite.setX(x);
-            this.sprite.setY(y);
-            SpriteWrapper._allSprites.push(this);
-        }
-        static get allSprites() {
-            return this._allSprites.slice();
-        }
-        static updateSprites() {
-            for (const s of SpriteWrapper._allSprites) {
-                try {
-                    s.sprite.applyVelocity();
-                    s.sprite.update();
-                }
-                catch (e) {
-                    log("update error", e);
-                }
-            }
-        }
-        static makeSpriteName(name) {
-            name = (name || "").trim().toLowerCase();
-            if (!name) {
-                return "";
-            }
-            if (!/\.png$/.test(name)) {
-                name += ".png";
-            }
-            const parts = name.split('/');
-            if (parts[0] !== "") {
-                parts.splice(0, 0, "");
-            }
-            if (parts[1] !== "images") {
-                parts.splice(1, 0, "images");
-            }
-            if (parts[2] === name) {
-                parts.splice(2, 0, "sprites");
-            }
-            return parts.join('/');
-        }
-        get x() {
-            return this.sprite.x;
-        }
-        set x(newx) {
-            this.sprite.setX(newx);
-        }
-        get y() {
-            return this.sprite.y;
-        }
-        set y(newy) {
-            this.sprite.setY(newy);
-        }
-        destroy() {
-            if (this.sprite) {
-                this.sprite.remove();
-                this.sprite = null;
-            }
-            const ind = SpriteWrapper._allSprites.indexOf(this);
-            if (ind >= 0) {
-                SpriteWrapper._allSprites.splice(ind, 1);
-            }
-        }
-        setAnimation(name) {
-            scene.loadImages([SpriteWrapper.makeSpriteName(name)], () => {
-                this.sprite.loadImg(SpriteWrapper.makeSpriteName(name), false);
-                const w = this.width || this.sprite.img.width;
-                const h = this.height || this.sprite.img.height;
-                this.setSize(w, h);
-            });
-        }
-        isTouching(other) {
-            return this.sprite.collidesWith(other.sprite);
-        }
-        get color() {
-            return this.sprite.color;
-        }
-        set color(color) {
-            this.sprite.setColor(color);
-        }
-        get name() {
-            return this._name;
-        }
-        set name(n) {
-            this._name = n || "";
-        }
-        get scale() {
-            return this.sprite.xscale;
-        }
-        set scale(s) {
-            this.sprite.scale(s);
-        }
-        set velocityX(v) {
-            this.sprite.xv = v;
-        }
-        get velocityX() {
-            return this.sprite.xv;
-        }
-        set velocityY(v) {
-            this.sprite.yv = v;
-        }
-        get velocityY() {
-            return this.sprite.yv;
-        }
-        set width(w) {
-            this._width = w;
-            this.sprite.size(w, this.height);
-        }
-        get width() {
-            return this._width;
-        }
-        get height() {
-            return this._height;
-        }
-        set height(h) {
-            this._height = h;
-            this.sprite.size(this.width, h);
-        }
-        setSize(width, height) {
-            this.sprite.size(width, height);
-        }
-    }
-    SpriteWrapper._allSprites = [];
+    const World = new NoWorld("#sandbox");
     /**
      * Scene background sprite
      */
@@ -144,10 +15,10 @@ $(() => {
         log("playsound", url, repeat);
     }
     function createSprite(x, y) {
-        return new SpriteWrapper(x, y);
+        return World.createSprite(x, y);
     }
     function background(color) {
-        bg.color = color;
+        World.setBackground(color);
     }
     function keyWentDown(key) {
         return false;
@@ -201,14 +72,8 @@ $(() => {
     }
     function textSize(size) {
     }
-    let _frameCount = 0;
-    let _startTime = 0;
     function paint(t) {
         try {
-            if (_startTime === 0) {
-                _startTime = Date.now();
-            }
-            _frameCount++;
             const f = eval("draw");
             if (typeof f === "function") {
                 f();
@@ -217,67 +82,17 @@ $(() => {
         catch (e) {
         }
     }
-    const World = {};
-    Object.defineProperties(World, {
-        allSprites: {
-            get: function () {
-                return SpriteWrapper.allSprites;
-            }
-        },
-        width: {
-            get: function () {
-                return sceneWidth;
-            }
-        },
-        height: {
-            get: function () {
-                return sceneHeight;
-            }
-        },
-        mouseX: {
-            get: function () {
-                return 0; // TODO
-            }
-        },
-        mouseY: {
-            get: function () {
-                return 0; // TODO
-            }
-        },
-        frameRate: {
-            get: function () {
-                return 40; // TODO
-            }
-        },
-        frameCount: {
-            get: function () {
-                return _frameCount;
-            }
-        },
-        seconds: {
-            get: function () {
-                return (Date.now() - _startTime) / 1000;
-            }
-        }
-    });
-    const bgImage = "/backgrounds/space1.png";
-    const bg = new SpriteWrapper(0, 0);
-    bg.width = sceneWidth;
-    bg.height = sceneHeight;
-    scene.loadImages([SpriteWrapper.makeSpriteName(bgImage)], () => {
-        bg.setAnimation(bgImage);
-    });
-    const ticker = scene.Ticker(paint);
+    const ticker = World.scene.Ticker(paint);
     ticker.run();
     /************************* Begin client code ****************************** */
     playSound("2013-10-20_Preparation_2_-_David_Fesliyan.mp3", true);
     // TODO
     // 1. high score need to work! - ;) Done
-    //reset all rocket cap and cooldown changes! - ;) Done
-    //opening screen - ;) Done
-    //adjust cooldown - ;) Done
+    // reset all rocket cap and cooldown changes! - ;) Done
+    // opening screen - ;) Done
+    // adjust cooldown - ;) Done
     //
-    //power Up Tnikiring
+    // power Up Tnikiring
     //
     //
     //

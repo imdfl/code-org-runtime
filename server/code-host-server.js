@@ -6,6 +6,9 @@ const fs = require("fs");
 const fsPath = require("path");
 const NodeUtils = require("util");
 const code_utils_1 = require("./utils/code-utils");
+// TODO
+// 1. Cache directory state and update it using file system watch
+// https://www.codementor.io/@stefanomaglione114/file-watcher-with-node-js-nlmscwcl6 
 require('source-map-support').install();
 class CodeHost {
     constructor() {
