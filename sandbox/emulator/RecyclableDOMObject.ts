@@ -23,8 +23,8 @@ export abstract class RecyclableDOMObject implements IRecyclableObject {
 		});
 	}
 
-	dispose(): void {
-		throw new Error("Method not implemented.");
+	public dispose(): void {
+		this.element = null;
 	}
 
 	protected set element(e: Element) {

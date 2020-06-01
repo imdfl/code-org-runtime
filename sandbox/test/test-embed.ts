@@ -1,4 +1,4 @@
-import { ISJS, ISJSSprite, ISJSScene, ISJSTicker, SJSTickCallback } from '../emulator/interfaces/sjs';
+import { ISJSTicker } from '../emulator/interfaces/sjs';
 import { SpriteWrapper } from '../emulator/sprite-wrapper.js';
 import { NoWorld } from "../emulator/no-world.js";
 
@@ -8,29 +8,29 @@ $(() => {
 
 	const World = new NoWorld("#sandbox");
 
-	/**
-	 * Scene background sprite
-	 */
-
-
 	function log(...args: any[]) {
 		console.log.apply(console, args);
 	}
 
-	function fill(color: string): any {
+	function fill(color: string) {
+		World.drawState.fillColor = color;
 		// TODO
 	}
 
 	function noFill() {
-		// TODO
+		World.drawState.fillColor = "transparent";
 	}
 
-	function stroke() {
-		// TODO
+	function stroke(color: string) {
+		World.drawState.strokeColor = color;
 	}
 
 	function noStroke() {
-		// TODO
+		World.drawState.strokeWeight = 0;
+	}
+
+	function strokeWeight(weight: number) {
+		World.drawState.strokeWeight = weight;
 	}
 
 	function playSound(url: string, repeat: boolean = false) {
@@ -96,11 +96,22 @@ $(() => {
 	}
 
 	function text(txt: any, x: number, y: number, ...args: any[]): void {
-		// const text = String(txt);
+		World.text.addText({
+			text: String(txt),
+			x,
+			y,
+			color: World.drawState.fillColor,
+			size: World.drawState.textSize,
+			font: World.drawState.textFont
+		});
 	}
 
 	function rect(x: number, y: number, width: number, height: number) {
-		// TODO
+		const d = World.drawState;
+		World.rects.addRect({
+			x, y, width, height, strokeColor: d.strokeColor, strokeWeight: d.strokeWeight,
+			fillColor: d.fillColor
+		});
 	}
 
 	function ellipse(x: number, y: number, width: number, height: number) {
@@ -108,14 +119,20 @@ $(() => {
 	}
 
 	function textSize(size: number): void {
+		World.drawState.textSize = size;
+	}
 
+	function textFont(font: string) {
+		World.drawState.textFont = font;
 	}
 
 	function paint(t: ISJSTicker): void {
 		try {
 			const f = eval("draw");
 			if (typeof f === "function") {
+				World.preUpdate();
 				f();
+				World.postUpdate();
 			}
 		}
 		catch (e) {
@@ -165,7 +182,7 @@ $(() => {
 		ndnSprites = [],
 		ndnOpeningSprites = [],
 		endSound = false,
-		//	defY = 65,
+		// defY = 65,
 		ndnBombs = [],
 		ndnRockets = [],
 		timer,
@@ -1105,17 +1122,17 @@ $(() => {
 		pauseControls();
 		timerUpdinator();
 		shooter();
-		//	checkKeyboardCommands(ndnSprites);
+		// checkKeyboardCommands(ndnSprites);
 		movePlayer(player);
 		checkIfRocketGone(ndnRockets);
 		floorReceiver(ndnBombs);
 		missOperator();
 		checkIfSpritesShot(ndnSprites, ndnRockets);
 		checkWall(ndnSprites);
-		//	checkIfSpritesClicked(ndnSprites);
+		// checkIfSpritesClicked(ndnSprites);
 		showScore();
 		showTotalScore();
-		//	shooterRandomizer (sooter);
+		// shooterRandomizer (sooter);
 		showHigh();
 		showRockets();
 		noTrespassing();

@@ -1,6 +1,8 @@
 import { SpriteWrapper } from "./sprite-wrapper.js";
 import { RectFactory } from './rect-factory.js';
+import { EllipseFactory } from './ellipse-factory.js';
 import { DrawState } from './draw-state.js';
+import { TextFactory } from './text-factory.js';
 export class NoWorld {
     constructor(root) {
         this.root = root;
@@ -35,19 +37,31 @@ export class NoWorld {
         });
         const bg = this.bg = this.createSprite(0, 0);
         bg.setSize(this.sceneWidth, this.sceneHeight);
-        this._rects = new RectFactory(this.scene.dom);
+        const dom = this._scene.layers["default"].dom;
+        this._rects = new RectFactory(dom);
+        this._text = new TextFactory(dom);
+        this._ellipses = new EllipseFactory(dom);
     }
     preUpdate() {
         this._frameCount++;
+        this.drawState.reset();
     }
     postUpdate() {
         this._rects.update();
+        this._ellipses.update();
+        this._text.update();
     }
     setBackground(color) {
         this.bg.color = color;
     }
     get rects() {
         return this._rects;
+    }
+    get ellipses() {
+        return this._ellipses;
+    }
+    get text() {
+        return this._text;
     }
     get drawState() {
         return this._drawState;

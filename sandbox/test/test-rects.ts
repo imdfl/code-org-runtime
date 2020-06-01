@@ -8,11 +8,6 @@ $(() => {
 
 	const World = new NoWorld("#sandbox");
 
-	/**
-	 * Scene background sprite
-	 */
-
-
 	function log(...args: any[]) {
 		console.log.apply(console, args);
 	}
@@ -23,7 +18,7 @@ $(() => {
 	}
 
 	function noFill() {
-		World.drawState.fillColor = null;
+		World.drawState.fillColor = "transparent";
 	}
 
 	function stroke(color: string) {
@@ -31,7 +26,11 @@ $(() => {
 	}
 
 	function noStroke() {
-		World.drawState.strokeColor = null;
+		World.drawState.strokeWeight = 0;
+	}
+
+	function strokeWeight(weight: number) {
+		World.drawState.strokeWeight = weight;
 	}
 
 	function playSound(url: string, repeat: boolean = false) {
@@ -97,7 +96,14 @@ $(() => {
 	}
 
 	function text(txt: any, x: number, y: number, ...args: any[]): void {
-		// const text = String(txt);
+		World.text.addText({
+			text: String(txt),
+			x,
+			y,
+			color: World.drawState.fillColor,
+			size: World.drawState.textSize,
+			font: World.drawState.textFont
+		});
 	}
 
 	function rect(x: number, y: number, width: number, height: number) {
@@ -109,11 +115,19 @@ $(() => {
 	}
 
 	function ellipse(x: number, y: number, width: number, height: number) {
-		// TODO
+		const d = World.drawState;
+		World.ellipses.addEllipse({
+			x, y, width, height, strokeColor: d.strokeColor, strokeWeight: d.strokeWeight,
+			fillColor: d.fillColor
+		});
 	}
 
 	function textSize(size: number): void {
+		World.drawState.textSize = size;
+	}
 
+	function textFont(font: string) {
+		World.drawState.textFont = font;
 	}
 
 	function paint(t: ISJSTicker): void {
@@ -136,9 +150,30 @@ $(() => {
 
 	/************************* Begin client code ****************************** */
 
-	var x = 4, y = 5;
+	let dx = 4, dy = 5;
+
 	function draw() {
-		rect(x++, y++, 20, 30);
+		text("rabak", 30, 40);
+		fill("blue");
+		ellipse(20, 20, 10, 14);
+		text("woohoo", randomNumber(10, 20), randomNumber(30, 40));
+		if ((World.frameCount % 60) > 30) {
+			textSize(30);
+			fill("red");
+			text("Man", 200, 200);
+		}
+	}
+
+	function drawRects() {
+		fill("green");
+		noStroke();
+		rect(dx++, dy++, 20, 30);
+		if ((World.frameCount % 60) > 30) {
+			fill("red");
+			stroke("blue");
+			strokeWeight(3);
+			rect(randomNumber(10, 30), randomNumber(30, 50), randomNumber(40, 80), randomNumber(30, 90));
+		}
 	}
 
 

@@ -302,6 +302,7 @@ export interface ISJSLayerOptions {
 }
 
 export interface ISJSLayer {
+	readonly dom: HTMLElement;
 	Sprite(source?: string, options?: ISJSSpriteOptions): ISJSSprite;
 }
 
@@ -338,7 +339,9 @@ export interface ISJSScene {
 	/**
 	 * the dom element of this scene, **Undocumented in sprites.js**
 	 */
-	readonly dom: HTMLElement;
+	// readonly dom: HTMLElement;
+
+	readonly layers: { [name: string]: ISJSLayer };
 	/**
 	 * Load the given array of image sources. When all images are loaded, the callback is executed.
 	 */

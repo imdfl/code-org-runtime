@@ -93,7 +93,7 @@ export abstract class ObjectRecycler<T extends IRecyclableObject, R extends IRec
 					}
 				}
 			}
-			else if (r.sameType.length) {
+			if (r.sameType.length) {
 				let ind = 0;
 				for (const s of r.sameType) {
 					ind = candidates.indexOf(s);
@@ -105,13 +105,12 @@ export abstract class ObjectRecycler<T extends IRecyclableObject, R extends IRec
 					}
 				}
 			}
-			else {
-				const obj = this.createObject(this.root);
-				obj.applyProperties(r.req);
-				newObjects.push(obj);
-			}
+			const obj = this.createObject(this.root);
+			obj.applyProperties(r.req);
+			newObjects.push(obj);
 		});
 		this._objects = newObjects;
+		candidates.forEach(c => c.dispose());
 		this._requests = [];
 	}
 }

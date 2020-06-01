@@ -2,23 +2,24 @@ import { SpriteWrapper } from '../emulator/sprite-wrapper.js';
 import { NoWorld } from "../emulator/no-world.js";
 $(() => {
     const World = new NoWorld("#sandbox");
-    /**
-     * Scene background sprite
-     */
     function log(...args) {
         console.log.apply(console, args);
     }
     function fill(color) {
+        World.drawState.fillColor = color;
         // TODO
     }
     function noFill() {
-        // TODO
+        World.drawState.fillColor = "transparent";
     }
-    function stroke() {
-        // TODO
+    function stroke(color) {
+        World.drawState.strokeColor = color;
     }
     function noStroke() {
-        // TODO
+        World.drawState.strokeWeight = 0;
+    }
+    function strokeWeight(weight) {
+        World.drawState.strokeWeight = weight;
     }
     function playSound(url, repeat = false) {
         log("playsound", url, repeat);
@@ -71,21 +72,38 @@ $(() => {
         return min + Math.round(Math.random() * range);
     }
     function text(txt, x, y, ...args) {
-        // const text = String(txt);
+        World.text.addText({
+            text: String(txt),
+            x,
+            y,
+            color: World.drawState.fillColor,
+            size: World.drawState.textSize,
+            font: World.drawState.textFont
+        });
     }
     function rect(x, y, width, height) {
-        // TODO
+        const d = World.drawState;
+        World.rects.addRect({
+            x, y, width, height, strokeColor: d.strokeColor, strokeWeight: d.strokeWeight,
+            fillColor: d.fillColor
+        });
     }
     function ellipse(x, y, width, height) {
         // TODO
     }
     function textSize(size) {
+        World.drawState.textSize = size;
+    }
+    function textFont(font) {
+        World.drawState.textFont = font;
     }
     function paint(t) {
         try {
             const f = eval("draw");
             if (typeof f === "function") {
+                World.preUpdate();
                 f();
+                World.postUpdate();
             }
         }
         catch (e) {
@@ -107,7 +125,7 @@ $(() => {
     //
     //
     var PLAYING = 2, FINALLOSE = 4, FINALWIN = 3, STARTING = 1, OPENING = 0, shotsNum = 1, shield = false, gameState = OPENING, bouns = false, ndnPowerUpTypes = ["doubleShot", "shield"], ndndActivePowerUps = [], startButton = false, openingDone, doubleShot = false, endMessage, rocketCap, gameSpeed = 1, allButtons = [], endReason, superShip = myCreateSuperShip("enemyBlack1_1", 10, 15), ndnSprites = [], ndnOpeningSprites = [], endSound = false, 
-    //	defY = 65,
+    // defY = 65,
     ndnBombs = [], ndnRockets = [], timer, superShipTimer, powerUpTimer, bombingCooldown, cooldownTimer, pauseButton = myCreateButton("animation_1", 300, 18), 
     // startSprite = myCreateButton ("animation_4", 300, 18),
     score = 0, currentLevel, totalScore = 0, player, pauseSymbol, high = 0, pauseIndicator = false;
@@ -913,17 +931,17 @@ $(() => {
         pauseControls();
         timerUpdinator();
         shooter();
-        //	checkKeyboardCommands(ndnSprites);
+        // checkKeyboardCommands(ndnSprites);
         movePlayer(player);
         checkIfRocketGone(ndnRockets);
         floorReceiver(ndnBombs);
         missOperator();
         checkIfSpritesShot(ndnSprites, ndnRockets);
         checkWall(ndnSprites);
-        //	checkIfSpritesClicked(ndnSprites);
+        // checkIfSpritesClicked(ndnSprites);
         showScore();
         showTotalScore();
-        //	shooterRandomizer (sooter);
+        // shooterRandomizer (sooter);
         showHigh();
         showRockets();
         noTrespassing();

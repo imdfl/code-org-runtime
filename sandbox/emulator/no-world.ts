@@ -1,7 +1,9 @@
 import { ISJSScene, ISJS } from './interfaces/sjs';
 import { SpriteWrapper } from "./sprite-wrapper.js";
 import { RectFactory } from './rect-factory.js';
+import { EllipseFactory } from './ellipse-factory.js';
 import { DrawState } from './draw-state.js';
+import { TextFactory } from './text-factory.js';
 
 declare var sjs: ISJS;
 
@@ -15,6 +17,10 @@ export class NoWorld {
 	private bg: SpriteWrapper;
 
 	private _rects: RectFactory;
+
+	private _ellipses: EllipseFactory;
+
+	private _text: TextFactory;
 
 	private _drawState: DrawState;
 
@@ -53,15 +59,21 @@ export class NoWorld {
 
 		const bg = this.bg = this.createSprite(0, 0);
 		bg.setSize(this.sceneWidth, this.sceneHeight);
-		this._rects = new RectFactory(this.scene.dom);
+		const dom = this._scene.layers["default"].dom;
+		this._rects = new RectFactory(dom);
+		this._text = new TextFactory(dom);
+		this._ellipses = new EllipseFactory(dom);
 	}
 
 	public preUpdate() {
 		this._frameCount++;
+		this.drawState.reset();
 	}
 
 	public postUpdate() {
 		this._rects.update();
+		this._ellipses.update();
+		this._text.update();
 	}
 
 	public setBackground(color: string) {
@@ -70,6 +82,14 @@ export class NoWorld {
 
 	public get rects(): RectFactory {
 		return this._rects;
+	}
+
+	public get ellipses(): EllipseFactory {
+		return this._ellipses;
+	}
+
+	public get text(): TextFactory {
+		return this._text;
 	}
 
 	public get drawState() {

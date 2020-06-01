@@ -2,9 +2,6 @@ import { SpriteWrapper } from '../emulator/sprite-wrapper.js';
 import { NoWorld } from "../emulator/no-world.js";
 $(() => {
     const World = new NoWorld("#sandbox");
-    /**
-     * Scene background sprite
-     */
     function log(...args) {
         console.log.apply(console, args);
     }
@@ -13,13 +10,16 @@ $(() => {
         // TODO
     }
     function noFill() {
-        World.drawState.fillColor = null;
+        World.drawState.fillColor = "transparent";
     }
     function stroke(color) {
         World.drawState.strokeColor = color;
     }
     function noStroke() {
-        World.drawState.strokeColor = null;
+        World.drawState.strokeWeight = 0;
+    }
+    function strokeWeight(weight) {
+        World.drawState.strokeWeight = weight;
     }
     function playSound(url, repeat = false) {
         log("playsound", url, repeat);
@@ -72,7 +72,14 @@ $(() => {
         return min + Math.round(Math.random() * range);
     }
     function text(txt, x, y, ...args) {
-        // const text = String(txt);
+        World.text.addText({
+            text: String(txt),
+            x,
+            y,
+            color: World.drawState.fillColor,
+            size: World.drawState.textSize,
+            font: World.drawState.textFont
+        });
     }
     function rect(x, y, width, height) {
         const d = World.drawState;
@@ -82,9 +89,17 @@ $(() => {
         });
     }
     function ellipse(x, y, width, height) {
-        // TODO
+        const d = World.drawState;
+        World.ellipses.addEllipse({
+            x, y, width, height, strokeColor: d.strokeColor, strokeWeight: d.strokeWeight,
+            fillColor: d.fillColor
+        });
     }
     function textSize(size) {
+        World.drawState.textSize = size;
+    }
+    function textFont(font) {
+        World.drawState.textFont = font;
     }
     function paint(t) {
         try {
@@ -101,9 +116,28 @@ $(() => {
     const ticker = World.scene.Ticker(paint);
     ticker.run();
     /************************* Begin client code ****************************** */
-    var x = 4, y = 5;
+    let dx = 4, dy = 5;
     function draw() {
-        rect(x++, y++, 20, 30);
+        text("rabak", 30, 40);
+        fill("blue");
+        ellipse(20, 20, 10, 14);
+        text("woohoo", randomNumber(10, 20), randomNumber(30, 40));
+        if ((World.frameCount % 60) > 30) {
+            textSize(30);
+            fill("red");
+            text("Man", 200, 200);
+        }
+    }
+    function drawRects() {
+        fill("green");
+        noStroke();
+        rect(dx++, dy++, 20, 30);
+        if ((World.frameCount % 60) > 30) {
+            fill("red");
+            stroke("blue");
+            strokeWeight(3);
+            rect(randomNumber(10, 30), randomNumber(30, 50), randomNumber(40, 80), randomNumber(30, 90));
+        }
     }
 });
 //# sourceMappingURL=test-rects.js.map

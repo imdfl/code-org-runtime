@@ -13,7 +13,7 @@ export class RecyclableDOMObject {
         });
     }
     dispose() {
-        throw new Error("Method not implemented.");
+        this.element = null;
     }
     set element(e) {
         const $e = jQuery(e);
