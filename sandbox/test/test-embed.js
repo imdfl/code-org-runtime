@@ -11,6 +11,15 @@ $(() => {
     function fill(color) {
         // TODO
     }
+    function noFill() {
+        // TODO
+    }
+    function stroke() {
+        // TODO
+    }
+    function noStroke() {
+        // TODO
+    }
     function playSound(url, repeat = false) {
         log("playsound", url, repeat);
     }
@@ -62,7 +71,7 @@ $(() => {
         return min + Math.round(Math.random() * range);
     }
     function text(txt, x, y, ...args) {
-        const text = String(txt);
+        // const text = String(txt);
     }
     function rect(x, y, width, height) {
         // TODO

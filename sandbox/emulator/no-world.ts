@@ -1,5 +1,7 @@
 import { ISJSScene, ISJS } from './interfaces/sjs';
 import { SpriteWrapper } from "./sprite-wrapper.js";
+import { RectFactory } from './rect-factory.js';
+import { DrawState } from './draw-state.js';
 
 declare var sjs: ISJS;
 
@@ -12,10 +14,15 @@ export class NoWorld {
 	private _frameCount: number;
 	private bg: SpriteWrapper;
 
+	private _rects: RectFactory;
+
+	private _drawState: DrawState;
+
 
 	public constructor(private root: any) {
 		this._startTime = Date.now();
 		this._frameCount = 0;
+		this._drawState = new DrawState();
 		const $: JQueryStatic = (window as any).jQuery;
 		const $root = this.$root = (function() {
 			if (!root) {
@@ -29,15 +36,11 @@ export class NoWorld {
 					return root as JQuery;
 				}
 			}
-			root = String(root);
-			let $e: JQuery;
-			for (const selector of [root, `#{root}`]) {
-				$e = $(selector);
-				if ($e.length === 1) {
-					return $e;
-				}
-				return $(document.body);
+			const $e: JQuery = $(String(root));
+			if ($e.length === 1) {
+				return $e;
 			}
+			return $(document.body);
 		}());
 		this.sceneWidth = $root.width() || 400;
 		this.sceneHeight = $root.height() || 400;
@@ -50,14 +53,27 @@ export class NoWorld {
 
 		const bg = this.bg = this.createSprite(0, 0);
 		bg.setSize(this.sceneWidth, this.sceneHeight);
+		this._rects = new RectFactory(this.scene.dom);
 	}
 
-	public update() {
+	public preUpdate() {
 		this._frameCount++;
+	}
+
+	public postUpdate() {
+		this._rects.update();
 	}
 
 	public setBackground(color: string) {
 		this.bg.color = color;
+	}
+
+	public get rects(): RectFactory {
+		return this._rects;
+	}
+
+	public get drawState() {
+		return this._drawState;
 	}
 
 	public get scene(): ISJSScene {

@@ -21,6 +21,18 @@ $(() => {
 		// TODO
 	}
 
+	function noFill() {
+		// TODO
+	}
+
+	function stroke() {
+		// TODO
+	}
+
+	function noStroke() {
+		// TODO
+	}
+
 	function playSound(url: string, repeat: boolean = false) {
 		log("playsound", url, repeat);
 	}
@@ -84,7 +96,7 @@ $(() => {
 	}
 
 	function text(txt: any, x: number, y: number, ...args: any[]): void {
-		const text = String(txt);
+		// const text = String(txt);
 	}
 
 	function rect(x: number, y: number, width: number, height: number) {

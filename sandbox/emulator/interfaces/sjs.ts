@@ -1,3 +1,9 @@
+/**
+ * TS Interfaces for Sprites.js (not spritesjs)
+ * https://spritejs.readthedocs.io/en/latest/
+ * https://github.com/batiste/sprite.js
+ */
+
 export type SJSImageCallback = () => any;
 export type SJSTickCallback = (ticker: ISJSTicker) => any;
 
@@ -284,6 +290,15 @@ export interface ISJSSprite {
 
 export interface ISJSLayerOptions {
 
+	/**
+	 * If true this layer will use the canvas element to draw the sprites. This enables you to mix HTML and canvas.
+	 */
+	useCanvas: boolean;
+	/**
+	 * If false this disables the automatic clearing of the canvas before every paint call.
+	 */
+	autoClear: boolean;
+	parent: Element;
 }
 
 export interface ISJSLayer {
@@ -305,15 +320,25 @@ export interface ISJSTickerOptions {
 }
 
 export interface ISJSCycle {
-
+	addSprite(sprite: ISJSSprite): any;
 }
 
 export interface ISJSInput {
-
+	readonly up: boolean;
+	readonly right: boolean;
+	readonly down: boolean;
+	readonly enter: boolean;
+	readonly space: boolean;
+	readonly ctrl: boolean;
+	readonly esc: boolean;
 }
 
 
 export interface ISJSScene {
+	/**
+	 * the dom element of this scene, **Undocumented in sprites.js**
+	 */
+	readonly dom: HTMLElement;
 	/**
 	 * Load the given array of image sources. When all images are loaded, the callback is executed.
 	 */
@@ -326,7 +351,7 @@ export interface ISJSScene {
 	/**
 	 *  Create a Layer object, see the Layer section.
 	 */
-	Layer(name: string, options: ISJSLayerOptions): ISJSLayerOptions;
+	Layer(name: string, options: Partial<ISJSLayerOptions>): ISJSLayerOptions;
 
 	/**
 	 *  Create a Sprite object, see the Sprite section.
@@ -344,9 +369,11 @@ export interface ISJSScene {
 }
 
 
-
+/**
+ * In order to make imports simpler, **PLEASE** declare a var of this type in your most global context
+ * declare var sjs: ISJS;
+ */
 export interface ISJS {
 	Scene(options: Partial<ISJSSceneOptions>): ISJSScene;
 }
 
-export declare var sjs: ISJS;

@@ -1,9 +1,12 @@
 import { SpriteWrapper } from "./sprite-wrapper.js";
+import { RectFactory } from './rect-factory.js';
+import { DrawState } from './draw-state.js';
 export class NoWorld {
     constructor(root) {
         this.root = root;
         this._startTime = Date.now();
         this._frameCount = 0;
+        this._drawState = new DrawState();
         const $ = window.jQuery;
         const $root = this.$root = (function () {
             if (!root) {
@@ -17,15 +20,11 @@ export class NoWorld {
                     return root;
                 }
             }
-            root = String(root);
-            let $e;
-            for (const selector of [root, `#{root}`]) {
-                $e = $(selector);
-                if ($e.length === 1) {
-                    return $e;
-                }
-                return $(document.body);
+            const $e = $(String(root));
+            if ($e.length === 1) {
+                return $e;
             }
+            return $(document.body);
         }());
         this.sceneWidth = $root.width() || 400;
         this.sceneHeight = $root.height() || 400;
@@ -36,12 +35,22 @@ export class NoWorld {
         });
         const bg = this.bg = this.createSprite(0, 0);
         bg.setSize(this.sceneWidth, this.sceneHeight);
+        this._rects = new RectFactory(this.scene.dom);
     }
-    update() {
+    preUpdate() {
         this._frameCount++;
+    }
+    postUpdate() {
+        this._rects.update();
     }
     setBackground(color) {
         this.bg.color = color;
+    }
+    get rects() {
+        return this._rects;
+    }
+    get drawState() {
+        return this._drawState;
     }
     get scene() {
         return this._scene;
