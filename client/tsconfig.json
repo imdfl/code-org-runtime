@@ -1,6 +1,7 @@
 {
-	"compileOnSave": false,
+	"compileOnSave": true,
 	"compilerOptions": {
+		"noEmit": false,
 		"baseUrl": "./",
 		"outDir": "./dist/out-tsc",
 		"sourceMap": true,
@@ -23,7 +24,7 @@
 		}
 	},
 
-	"exclude": ["**/*.orig.*"],
+	"exclude": ["**/*.orig.*", "**/*.spec.ts"],
 	"angularCompilerOptions": {
 		"fullTemplateTypeCheck": true,
 		"strictInjectionParameters": true

@@ -134,101 +134,134 @@ class CodeHost {
         this._scriptsPath = fsPath.join(this._dataPath, "scripts");
         fs.mkdirSync(this._renderedPath, { recursive: true });
         const r = this._scriptRouter = express.Router();
-        r.get("/:name", this.serveScript.bind(this));
-        r.get("/raw/:name", this.serveRawScript.bind(this));
+        r.get("/:user/:name", this.serveScript.bind(this));
+        r.get("/raw/:user/:name", this.serveRawScript.bind(this));
         app.use("/scripts", r);
         const api = this._apiRouter = express.Router();
-        api.get("/list", this.listScripts.bind(this));
-        api.get("/script/:name", this.loadScriptData.bind(this));
-        api.post("/render"), this.renderOnce.bind(this);
-        ;
+        api.get("/users", this.listUsers.bind(this));
+        api.get("/list/:user", this.listScripts.bind(this));
+        api.get("/script/:user/:name", this.loadScriptData.bind(this));
+        api.post("/render", this.renderOnce.bind(this));
         app.use("/api", api);
     }
     async listScripts(req, res, next) {
-        var recs = await this.listFolder(this._scriptsPath);
-        return res.status(200).contentType("application/json")
-            .send({
-            error: "",
-            data: recs
-        }).end();
+        const user = await this.userFromRequest(req);
+        if (!user) {
+            return this.sendObjectResponse(res, "user not found", null);
+        }
+        var recs = await this.listUserFolder(user, "js");
+        return this.sendObjectResponse(res, null, recs);
+    }
+    async listUsers(req, res, next) {
+        const users = await NodeUtils.promisify(fs.readdir)(this._scriptsPath);
+        const lstat = NodeUtils.promisify(fs.lstat);
+        const ret = new Array();
+        for (let name of users) {
+            const stat = await lstat(fsPath.join(this._scriptsPath, name));
+            if (stat && stat.isDirectory()) {
+                ret.push({
+                    name: this.makeUserName(name),
+                    id: name,
+                    clientPath: `/scripts/${name}}`
+                });
+            }
+        }
+        return this.sendObjectResponse(res, null, ret);
     }
     async loadScriptData(req, res, next) {
-        const rawName = req.params["name"];
-        const name = code_utils_1.CodeUtils.makeScriptName(rawName);
-        const script = await this.loadScript(rawName);
-        if (!script) {
-            return res.status(404).send(`${rawName} not found`).end();
+        const user = await this.userFromRequest(req);
+        if (!user) {
+            return this.sendObjectResponse(res, "user not found", null);
         }
-        var raw = await this.loadRawScript(name);
-        return res.status(200).contentType("application/json")
-            .send({
-            error: "",
-            data: {
-                raw: raw,
-                rendered: script,
-                name: name,
-                url: `/scripts/{name}`
-            }
-        }).end();
+        const scriptName = req.params["name"];
+        const script = await this.loadScript(user, scriptName);
+        if (!script) {
+            return res.status(404).send(`${scriptName} not found`).end();
+        }
+        if (!script.content.raw) {
+            script.content.raw = await this.loadRawScript(user, scriptName);
+        }
+        return this.sendObjectResponse(res, null, script);
     }
     async renderOnce(req, res, next) {
         const rawScript = req.body && req.body.script;
         if (!rawScript) {
-            return res.status(404).send("no script body provided").end();
+            return res.status(400).send("no script body provided").end();
         }
         var script = await this.renderScriptFromBody(rawScript);
-        return res.status(200).contentType("application/javascript")
-            .send({
-            error: "",
-            data: script
-        }).end();
+        return this.sendScriptResponse(res, script);
     }
     async serveScript(req, res, next) {
-        const scriptPath = req.params["name"];
-        var script = await this.loadScript(scriptPath);
-        if (!script) {
-            return res.status(404).send(`${scriptPath} not found`).end();
+        const user = await this.userFromRequest(req);
+        if (!user) {
+            return this.sendObjectResponse(res, "user not found", null);
         }
-        return res.status(200).contentType("application/javascript")
-            .send(script).end();
+        const scriptName = req.params["name"];
+        var script = await this.loadScript(user, scriptName);
+        if (!script) {
+            return res.status(404).send(`${scriptName} not found`).end();
+        }
+        return this.sendScriptResponse(res, script.content.rendered);
     }
     async serveRawScript(req, res, next) {
-        const scriptPath = req.params["name"];
-        var script = await this.loadRawScript(scriptPath);
-        if (!script) {
-            return res.status(404).send(`${scriptPath} not found`).end();
+        const scriptName = req.params["name"];
+        const user = await this.userFromRequest(req);
+        if (!user) {
+            return this.sendObjectResponse(res, "user not found", null);
         }
-        return res.status(200).contentType("application/javascript")
-            .send(script).end();
+        var script = await this.loadRawScript(user, scriptName);
+        if (!script) {
+            return res.status(404).send(`${scriptName} not found`).end();
+        }
+        return this.sendScriptResponse(res, script);
     }
-    async loadScript(name) {
-        if (!name || !(name = name.trim())) {
+    async loadScript(user, name) {
+        const scriptId = code_utils_1.CodeUtils.makeScriptName(name);
+        if (!user || !scriptId) {
             return null;
         }
         try {
-            name = code_utils_1.CodeUtils.makeScriptName(name);
-            const fullPath = fsPath.join(this._renderedPath, `${name}.js`);
-            const script = await this.readFile(fullPath);
-            if (script) {
-                return script;
+            const ret = {
+                name: name,
+                id: scriptId,
+                author: user.name,
+                content: {
+                    raw: null,
+                    rendered: null
+                },
+                modification: new Date(),
+                rawUrl: null,
+                url: null
+            };
+            const fullPath = fsPath.join(user.renderPath, `${scriptId}.js`);
+            ret.content.rendered = await this.readFile(fullPath);
+            if (ret.content.rendered) {
+                return ret;
             }
-            const rendered = await this.renderScript(name, fullPath);
-            return rendered;
+            ret.content = await this.renderScript(user, name);
+            return ret;
         }
         catch (e) {
             console.error(e);
             return null;
         }
     }
-    async listFolder(url) {
+    async listUserFolder(user, subFolder) {
+        const url = fsPath.join(this._scriptsPath, user.id, subFolder || "");
         const fileNames = await NodeUtils.promisify(fs.readdir)(url);
         return fileNames.map(f => {
             const name = code_utils_1.CodeUtils.makeScriptName(f);
             return {
-                name: name,
-                url: `/scripts/${name}`,
-                author: "Nadan",
-                lastModification: new Date()
+                name: f,
+                id: name,
+                url: `/scripts/${user.id}/${name}`,
+                rawUrl: `/scripts/raw/${user.id}/${name}`,
+                author: user.name,
+                modification: new Date(),
+                content: {
+                    raw: null,
+                    rendered: null
+                }
             };
         });
     }
@@ -241,36 +274,40 @@ class CodeHost {
             return null;
         }
     }
-    async loadRawScript(name) {
+    async loadRawScript(user, name) {
         name = code_utils_1.CodeUtils.makeScriptName(name);
         if (!name) {
-            return "";
+            return null;
         }
-        const scriptPath = fsPath.join(this._scriptsPath, `${name}.js`);
+        const scriptPath = fsPath.join(user.path, `js/${name}.js`);
         return await this.readFile(scriptPath);
     }
     /**
      *
-     * @param name already .js free
+     * @param scriptName already .js free
      * @param renderedPath
      */
-    async renderScript(name, renderedPath) {
+    async renderScript(user, scriptName) {
         try {
-            const script = await this.loadRawScript(name);
-            if (!script) {
+            const raw = await this.loadRawScript(user, scriptName);
+            if (!raw) {
                 return null;
             }
             const headerPath = fsPath.join(this._dataPath, "script-header.jspart");
             const footerPath = fsPath.join(this._dataPath, "script-footer.jspart");
             const header = await this.readFile(headerPath);
             const footer = await this.readFile(footerPath);
-            const ret = [header, script, footer].join('\n');
-            fs.writeFile(renderedPath, ret, (err) => {
+            const rendered = [header, raw, footer].join('\n');
+            const renderedPath = fsPath.join(user.renderPath, code_utils_1.CodeUtils.makeScriptName(scriptName));
+            fs.writeFile(renderedPath, rendered, (err) => {
                 if (err) {
                     console.log("fs error in write rendered", renderedPath, err);
                 }
             });
-            return ret;
+            return {
+                raw,
+                rendered
+            };
         }
         catch (e) {
             return null;
@@ -292,6 +329,58 @@ class CodeHost {
         catch (e) {
             return null;
         }
+    }
+    sendObjectResponse(res, error, data) {
+        return res.status(200).contentType("application/json")
+            .send({
+            error,
+            data
+        }).end();
+    }
+    sendScriptResponse(res, script) {
+        return res.status(200).contentType("application/javascript")
+            .send(script).end();
+    }
+    async userFromRequest(req) {
+        const userName = req.params.user;
+        if (!userName) {
+            return null;
+        }
+        const userId = this.makeUserId(userName);
+        const fullPath = fsPath.join(this._scriptsPath, userId);
+        try {
+            const stat = await NodeUtils.promisify(fs.lstat)(fullPath);
+            if (stat && stat.isDirectory) {
+                return {
+                    name: userName,
+                    path: fullPath,
+                    clientPath: `/scripts/${userId}`,
+                    renderPath: fsPath.join(this._renderedPath, userId),
+                    id: userId
+                };
+            }
+        }
+        catch (e) {
+            console.error(e);
+        }
+        return null;
+    }
+    makeUserId(name) {
+        if (!name) {
+            return null;
+        }
+        return name.trim().toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/\-\-+/g, '-')
+            .replace(/[^a-z0-9_\-\.\$]+/ig, "_");
+    }
+    makeUserName(id) {
+        if (!id) {
+            return null;
+        }
+        return id
+            .replace(/[_\-+]+/g, ' ')
+            .replace(/\s\s+/g, ' ');
     }
 }
 const host = new CodeHost();

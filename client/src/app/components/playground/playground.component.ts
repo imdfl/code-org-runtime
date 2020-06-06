@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
-import { DalService } from "@services/dal.service"
+import { DalService } from "@services/dal.service";
 import { ActivatedRoute } from '@angular/router';
 
 @Component({
@@ -9,12 +9,12 @@ import { ActivatedRoute } from '@angular/router';
 	encapsulation: ViewEncapsulation.None
 })
 export class PlaygroundComponent implements OnInit {
-	private _scripts: Array<IScriptRecord>;
-	private _scriptData: IScriptContent = null;
+	private _scriptData: IScriptRecord = null;
 	private _cmOptions: any;
 
 	constructor(private _route: ActivatedRoute, private _dal: DalService) {
-		this._scriptData = { raw: "", rendered: "", url: "", name: "" };
+		// protect agains null access
+		this._scriptData = { content: {} as IScriptContent } as IScriptRecord;
 		this._cmOptions = {
 			lineNumbers: true,
 			theme: 'neo',
@@ -23,12 +23,17 @@ export class PlaygroundComponent implements OnInit {
 	}
 
 	async ngOnInit(): Promise<any> {
+		const user = this._route.snapshot.paramMap.get('user');
 		const name = this._route.snapshot.paramMap.get('name');
-		const data = await this._dal.loadScriptContent(name);
+		const data = await this._dal.loadScriptContent(user, name);
 		this._scriptData = data;
 	}
 
-	public get scriptData(): IScriptContent {
+	public get scriptContent(): IScriptContent {
+		return this._scriptData.content;
+	}
+
+	public get scriptData(): IScriptRecord {
 		return this._scriptData;
 	}
 

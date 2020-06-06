@@ -18,11 +18,13 @@ import { HttpClientModule } from '@angular/common/http';
 import { DalService } from './services/dal.service';
 import { CodemirrorModule } from '@ctrl/ngx-codemirror';
 import { PlaygroundComponent } from '@components/playground/playground.component';
+import { UserBrowserComponent } from '@components/user-browser/user-browser.component';
 
 @NgModule({
 	declarations: [
 		DFLAppComponent,
 		CodeBrowserComponent,
+		UserBrowserComponent,
 		PlaygroundComponent
 	],
 	imports: [
