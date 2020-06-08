@@ -7,7 +7,8 @@ import * as fsPath from "path";
 import * as NodeUtils from "util";
 import { CodeUtils } from "./utils/code-utils";
 import { INOServerUser } from 'models/user.model';
-
+import * as Proxy from "express-http-proxy";
+import { IncomingHttpHeaders, OutgoingHttpHeaders } from "http";
 // TODO
 // 1. Cache directory state and update it using file system watch
 // https://www.codementor.io/@stefanomaglione114/file-watcher-with-node-js-nlmscwcl6 
@@ -54,8 +55,45 @@ class CodeHost {
 		});
 
 		app.use(express.static(path.join(__dirname, 'public')));
-		app.use('/client', express.static('client'));
-		app.use('/dev', express.static('dev'));
+		["client", "sandbox"].forEach(s => {
+			app.use(`/${s}`, express.static(path.join(__dirname, s)));
+		});
+		const headerUpdater = (
+			headers: IncomingHttpHeaders,
+			userReq: Request,
+			userRes: Response,
+			proxyReq: Request,
+			proxyRes: Response
+		) => {
+			const h: OutgoingHttpHeaders = headers as OutgoingHttpHeaders;
+			const h1 = userRes.getHeaders();
+			h1.contentType = (proxyRes as any).headers["content-type"];
+
+			return h1;
+		};
+		const apiProxy = Proxy('localhost:4200', {
+			proxyReqPathResolver: (req: Request) => {
+				return req.url.replace(/\/dev/, '/');
+			},
+
+			userResHeaderDecorator: headerUpdater
+
+		});
+
+		// For the angular server page updater
+		const directProxy = (root: string) => {
+			return Proxy("localhost:4200", {
+				proxyReqPathResolver: (req: Request) => {
+					return req.url.replace(/^\//, `/${root}/`);
+				},
+
+				userResHeaderDecorator: headerUpdater
+			});
+		};
+
+		app.use('/dev', apiProxy);
+		app.use('/sockjs-node', directProxy("sockjs-node"));
+		app.use('/__webpack_dev_server__', directProxy("__webpack_dev_server__"));
 
 		app.use('/', indexRouter);
 		app.use('/users', usersRouter);
@@ -322,8 +360,8 @@ class CodeHost {
 				author: user.name,
 				modification: new Date(),
 				content: {
-					 raw: null,
-					 rendered: null
+					raw: null,
+					rendered: null
 				}
 			};
 		});
@@ -403,10 +441,10 @@ class CodeHost {
 
 	private sendObjectResponse(res: Response, error: any, data: any) {
 		return res.status(200).contentType("application/json")
-		.send({
-			error,
-			data
-		}).end();
+			.send({
+				error,
+				data
+			}).end();
 	}
 
 	private sendScriptResponse(res: Response, script: string) {
@@ -437,7 +475,7 @@ class CodeHost {
 			console.error(e);
 		}
 		return null;
-	} 
+	}
 
 	private makeUserId(name: string): string {
 		if (!name) {
@@ -456,7 +494,7 @@ class CodeHost {
 		return id
 			.replace(/[_\-+]+/g, ' ')
 			.replace(/\s\s+/g, ' ');
- 
+
 	}
 }
 

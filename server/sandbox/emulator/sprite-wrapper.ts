@@ -2,7 +2,7 @@ import { ISJSSprite, ISJSScene } from "./interfaces/sjs";
 
 export class SpriteWrapper {
 	private static readonly _allSprites: Array<SpriteWrapper> = [];
-
+	private static _imagePath: string;
 	private sprite: ISJSSprite;
 	private _name: string;
 	private _width = 0;
@@ -11,6 +11,12 @@ export class SpriteWrapper {
 	public static get allSprites(): Array<SpriteWrapper> {
 		return this._allSprites.slice();
 	}
+
+	public static set imagePath(path: string) {
+		// remove training slash
+		SpriteWrapper._imagePath = (path || "").trim().replace(/\/$/, "");
+	}
+
 	public static updateSprites(): void {
 		for (const s of SpriteWrapper._allSprites) {
 			try {
@@ -23,7 +29,7 @@ export class SpriteWrapper {
 		}
 	}
 
-	public static makeSpriteName(name: string): string {
+	public static makeSpritePath(name: string): string {
 		name = (name || "").trim().toLowerCase();
 		if (!name) {
 			return "";
@@ -31,17 +37,21 @@ export class SpriteWrapper {
 		if (!/\.png$/.test(name)) {
 			name += ".png";
 		}
-		const parts = name.split('/');
-		if (parts[0] !== "") {
-			parts.splice(0, 0, "");
+		if (name[0] === '/') {
+			return name;
 		}
-		if (parts[1] !== "images") {
-			parts.splice(1, 0, "images");
-		}
-		if (parts[2] === name) {
-			parts.splice(2, 0, "sprites");
-		}
-		return parts.join('/');
+		return [SpriteWrapper._imagePath, name].join('/');
+		// const parts = name.split('/');
+		// if (parts[0] !== "") {
+		// 	parts.splice(0, 0, "");
+		// }
+		// if (parts[1] !== "images") {
+		// 	parts.splice(1, 0, "images");
+		// }
+		// if (parts[2] === name) {
+		// 	parts.splice(2, 0, "sprites");
+		// }
+		// return parts.join('/');
 	}
 
 
@@ -80,8 +90,9 @@ export class SpriteWrapper {
 	}
 
 	public setAnimation(name: string) {
-		this.scene.loadImages([SpriteWrapper.makeSpriteName(name)], () => {
-			this.sprite.loadImg(SpriteWrapper.makeSpriteName(name), false);
+		const url = SpriteWrapper.makeSpritePath(name);
+		this.scene.loadImages([url], () => {
+			this.sprite.loadImg(url, false);
 			const w = this.width || this.sprite.img.width;
 			const h = this.height || this.sprite.img.height;
 			this.setSize(w, h);

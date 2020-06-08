@@ -11,6 +11,7 @@ import { ActivatedRoute } from '@angular/router';
 export class PlaygroundComponent implements OnInit {
 	private _scriptData: IScriptRecord = null;
 	private _cmOptions: any;
+	private _user: string;
 
 	constructor(private _route: ActivatedRoute, private _dal: DalService) {
 		// protect agains null access
@@ -23,10 +24,14 @@ export class PlaygroundComponent implements OnInit {
 	}
 
 	async ngOnInit(): Promise<any> {
-		const user = this._route.snapshot.paramMap.get('user');
+		this._user = this._route.snapshot.paramMap.get('user');
 		const name = this._route.snapshot.paramMap.get('name');
-		const data = await this._dal.loadScriptContent(user, name);
+		const data = await this._dal.loadScriptContent(this._user, name);
 		this._scriptData = data;
+	}
+
+	public get user(): string {
+		return this._user;
 	}
 
 	public get scriptContent(): IScriptContent {

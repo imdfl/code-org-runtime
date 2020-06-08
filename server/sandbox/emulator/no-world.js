@@ -3,8 +3,9 @@ import { RectFactory } from './rect-factory.js';
 import { EllipseFactory } from './ellipse-factory.js';
 import { DrawState } from './draw-state.js';
 import { TextFactory } from './text-factory.js';
+import { createGameInput } from "./game-input.js";
 export class NoWorld {
-    constructor(root) {
+    constructor(doc, root) {
         this.root = root;
         this._startTime = Date.now();
         this._frameCount = 0;
@@ -12,7 +13,7 @@ export class NoWorld {
         const $ = window.jQuery;
         const $root = this.$root = (function () {
             if (!root) {
-                return $(document.body);
+                return $(doc.body);
             }
             if (typeof root === "object") {
                 if (root instanceof HTMLElement) {
@@ -26,7 +27,7 @@ export class NoWorld {
             if ($e.length === 1) {
                 return $e;
             }
-            return $(document.body);
+            return $(doc.body);
         }());
         this.sceneWidth = $root.width() || 400;
         this.sceneHeight = $root.height() || 400;
@@ -35,12 +36,17 @@ export class NoWorld {
             h: this.sceneHeight,
             parent: $root[0]
         });
+        this._input = createGameInput();
+        this._input.connect($root);
         const bg = this.bg = this.createSprite(0, 0);
         bg.setSize(this.sceneWidth, this.sceneHeight);
         const dom = this._scene.layers["default"].dom;
         this._rects = new RectFactory(dom);
         this._text = new TextFactory(dom);
         this._ellipses = new EllipseFactory(dom);
+    }
+    get input() {
+        return this._input;
     }
     preUpdate() {
         this._frameCount++;
@@ -50,6 +56,7 @@ export class NoWorld {
         this._rects.update();
         this._ellipses.update();
         this._text.update();
+        this._input.update();
     }
     setBackground(color) {
         this.bg.color = color;

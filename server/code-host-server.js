@@ -6,6 +6,7 @@ const fs = require("fs");
 const fsPath = require("path");
 const NodeUtils = require("util");
 const code_utils_1 = require("./utils/code-utils");
+const Proxy = require("express-http-proxy");
 // TODO
 // 1. Cache directory state and update it using file system watch
 // https://www.codementor.io/@stefanomaglione114/file-watcher-with-node-js-nlmscwcl6 
@@ -39,8 +40,33 @@ class CodeHost {
             next();
         });
         app.use(express.static(path.join(__dirname, 'public')));
-        app.use('/client', express.static('client'));
-        app.use('/dev', express.static('dev'));
+        ["client", "sandbox"].forEach(s => {
+            app.use(`/${s}`, express.static(path.join(__dirname, s)));
+        });
+        const headerUpdater = (headers, userReq, userRes, proxyReq, proxyRes) => {
+            const h = headers;
+            const h1 = userRes.getHeaders();
+            h1.contentType = proxyRes.headers["content-type"];
+            return h1;
+        };
+        const apiProxy = Proxy('localhost:4200', {
+            proxyReqPathResolver: (req) => {
+                return req.url.replace(/\/dev/, '/');
+            },
+            userResHeaderDecorator: headerUpdater
+        });
+        // For the angular server page updater
+        const directProxy = (root) => {
+            return Proxy("localhost:4200", {
+                proxyReqPathResolver: (req) => {
+                    return req.url.replace(/^\//, `/${root}/`);
+                },
+                userResHeaderDecorator: headerUpdater
+            });
+        };
+        app.use('/dev', apiProxy);
+        app.use('/sockjs-node', directProxy("sockjs-node"));
+        app.use('/__webpack_dev_server__', directProxy("__webpack_dev_server__"));
         app.use('/', indexRouter);
         app.use('/users', usersRouter);
         this.installAPI(app);

@@ -1,0 +1,11 @@
+<div class="sandbox-component-container">
+	<h1>Sandbox</h1>
+	<div class="sandbox-body">
+		<input type="text" placeholder="test page name" (keyup.enter)="onNavigate($event)">
+		<div class="sandbox-iframe-container">
+			<iframe class="sandbox-iframe" [src]="url">
+
+			</iframe>
+		</div>
+	</div>
+</div>

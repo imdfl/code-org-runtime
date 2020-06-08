@@ -19,12 +19,14 @@ import { DalService } from './services/dal.service';
 import { CodemirrorModule } from '@ctrl/ngx-codemirror';
 import { PlaygroundComponent } from '@components/playground/playground.component';
 import { UserBrowserComponent } from '@components/user-browser/user-browser.component';
+import { SandboxComponent } from '@components/sandbox/sandbox.component';
 
 @NgModule({
 	declarations: [
 		DFLAppComponent,
 		CodeBrowserComponent,
 		UserBrowserComponent,
+		SandboxComponent,
 		PlaygroundComponent
 	],
 	imports: [

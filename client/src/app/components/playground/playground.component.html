@@ -1,6 +1,6 @@
 <div class="playground-component-container">
 	<h1>Script <span class="script-name">{{ scriptData.name || 'unknown' }}</span>
-		by <a [routerLink]="'/user/' + scriptData.name">{{ scriptData.name }}</a></h1>
+		by <a [routerLink]="'/user/' + user">{{ user }}</a></h1>
 	<div class="playground-body">
 		<div class="editor-view">
 			<ngx-codemirror [(ngModel)]="scriptContent.raw" [options]="codeMirrorOptions"></ngx-codemirror>

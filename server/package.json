@@ -11,6 +11,7 @@
     "debug": "~2.6.9",
     "ejs": "~2.6.1",
     "express": "~4.16.1",
+    "express-http-proxy": "^1.6.0",
     "http-errors": "~1.6.3",
     "morgan": "~1.9.1"
   },
@@ -19,6 +20,7 @@
     "@types/core-js": "^2.5.3",
     "@types/dotenv": "^8.2.0",
     "@types/express": "^4.17.6",
+    "@types/express-http-proxy": "^1.6.1",
     "@types/node": "^14.0.1",
     "source-map-support": "^0.5.19",
     "tsconfig-paths": "^3.9.0",
