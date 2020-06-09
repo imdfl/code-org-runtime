@@ -3,16 +3,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.installAPI = void 0;
 const express = require("express");
 const script_api_1 = require("./script-api");
-const image_api_1 = require("./image-api");
+const media_api_1 = require("./media-api");
 class AppRouters {
     constructor(app) {
         this.authorRouter = express.Router();
         this.clientRouter = express.Router();
         this.scriptRouter = express.Router();
         this.imagesRouter = express.Router();
+        this.soundsRouter = express.Router();
         app.use("/scripts", this.scriptRouter);
         app.use("/api", this.clientRouter);
         app.use("/userimages", this.imagesRouter);
+        app.use("/usersounds", this.soundsRouter);
     }
 }
 class ApiIndex {
@@ -22,8 +24,8 @@ class ApiIndex {
         this.routers = new AppRouters(appContext.app);
         const sapi = new script_api_1.ScriptAPI();
         sapi.install(appContext, this.routers);
-        const imgApi = new image_api_1.ImageAPI();
-        imgApi.install(appContext, this.routers);
+        const mediaApi = new media_api_1.MediaAPI();
+        mediaApi.install(appContext, this.routers);
     }
 }
 let index = null;

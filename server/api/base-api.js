@@ -4,32 +4,17 @@ exports.BaseAPI = void 0;
 const fs = require("fs");
 const fsPath = require("path");
 const NodeUtils = require("util");
-const code_utils_1 = require("../utils/code-utils");
 class BaseAPI {
+    /**
+     * Override to install your own api, but don't forget to call super.install
+     * @param appContext
+     * @param routers
+     */
     install(appContext, routers) {
         this._appContext = appContext;
     }
     get appContext() {
         return this._appContext;
-    }
-    async listUserFolder(user, subFolder) {
-        const url = fsPath.join(this._appContext.paths.scripts, user.id, subFolder || "");
-        const fileNames = await NodeUtils.promisify(fs.readdir)(url);
-        return fileNames.map(f => {
-            const name = code_utils_1.CodeUtils.makeScriptName(f);
-            return {
-                name: f,
-                id: name,
-                url: `/scripts/${user.id}/${name}`,
-                rawUrl: `/scripts/raw/${user.id}/${name}`,
-                author: user.name,
-                modification: new Date(),
-                content: {
-                    raw: null,
-                    rendered: null
-                }
-            };
-        });
     }
     async readFile(path) {
         try {

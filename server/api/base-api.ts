@@ -11,34 +11,17 @@ import { IAppRouters, IAppContext, INOAPI } from "./interfaces";
 export class BaseAPI implements INOAPI {
 	private _appContext: IAppContext;
 
+	/**
+	 * Override to install your own api, but don't forget to call super.install
+	 * @param appContext 
+	 * @param routers 
+	 */
 	public install(appContext: IAppContext, routers: IAppRouters): void {
 		this._appContext = appContext;
 	}
 
 	public get appContext() {
 		return this._appContext;
-	}
-
-
-	protected async listUserFolder(user: INOServerUser, subFolder: string): Promise<IScriptRecord[]> {
-		const url = fsPath.join(this._appContext.paths.scripts, user.id, subFolder || "");
-		const fileNames = await NodeUtils.promisify(fs.readdir)(url);
-
-		return fileNames.map(f => {
-			const name = CodeUtils.makeScriptName(f);
-			return {
-				name: f,
-				id: name,
-				url: `/scripts/${user.id}/${name}`,
-				rawUrl: `/scripts/raw/${user.id}/${name}`,
-				author: user.name,
-				modification: new Date(),
-				content: {
-					raw: null,
-					rendered: null
-				}
-			};
-		});
 	}
 
 	protected async readFile(path: string): Promise<string> {

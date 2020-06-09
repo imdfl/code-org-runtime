@@ -28,6 +28,7 @@ export interface IAppPaths {
 	readonly rendered: string;
 	readonly data: string;
 	readonly images: string;
+	readonly sandbox: string;
 }
 
 export interface IAppContext {

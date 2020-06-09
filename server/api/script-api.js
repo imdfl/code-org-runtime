@@ -178,6 +178,25 @@ class ScriptAPI extends base_api_1.BaseAPI {
             return null;
         }
     }
+    async listUserFolder(user, subFolder) {
+        const url = fsPath.join(this.appContext.paths.scripts, user.id, subFolder || "");
+        const fileNames = await NodeUtils.promisify(fs.readdir)(url);
+        return fileNames.map(f => {
+            const name = code_utils_1.CodeUtils.makeScriptName(f);
+            return {
+                name: f,
+                id: name,
+                url: `/scripts/${user.id}/${name}`,
+                rawUrl: `/scripts/raw/${user.id}/${name}`,
+                author: user.name,
+                modification: new Date(),
+                content: {
+                    raw: null,
+                    rendered: null
+                }
+            };
+        });
+    }
 }
 exports.ScriptAPI = ScriptAPI;
 //# sourceMappingURL=script-api.js.map

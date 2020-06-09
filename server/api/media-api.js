@@ -1,12 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ImageAPI = void 0;
+exports.MediaAPI = void 0;
 const fs = require("fs");
 const fsPath = require("path");
 const NodeUtils = require("util");
 const code_utils_1 = require("../utils/code-utils");
 const base_api_1 = require("./base-api");
-class ImageAPI extends base_api_1.BaseAPI {
+class MediaAPI extends base_api_1.BaseAPI {
     install(appContext, routers) {
         super.install(appContext, routers);
         this._defaultImagePath = fsPath.join(appContext.paths.sandbox, "images", "default.png");
@@ -60,5 +60,5 @@ class ImageAPI extends base_api_1.BaseAPI {
         });
     }
 }
-exports.ImageAPI = ImageAPI;
-//# sourceMappingURL=image-api.js.map
+exports.MediaAPI = MediaAPI;
+//# sourceMappingURL=media-api.js.map

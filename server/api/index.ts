@@ -3,22 +3,25 @@ import * as fs from "fs";
 import * as fsPath from "path";
 import { ScriptAPI } from "./script-api";
 import { IAppRouters, IAppContext} from "./interfaces";
-import { ImageAPI } from "./image-api";
+import { MediaAPI } from "./media-api";
 
 class AppRouters implements IAppRouters {
 	public readonly clientRouter: express.Router;
 	public readonly authorRouter: express.Router;
 	public readonly scriptRouter: express.Router;
 	public readonly imagesRouter: express.Router;
+	public readonly soundsRouter: express.Router;
 	constructor(app: express.Application) {
 		this.authorRouter = express.Router();
 		this.clientRouter = express.Router();
 		this.scriptRouter = express.Router();
 		this.imagesRouter = express.Router();
+		this.soundsRouter = express.Router();
 
 		app.use("/scripts", this.scriptRouter);
 		app.use("/api", this.clientRouter);
 		app.use("/userimages", this.imagesRouter);
+		app.use("/usersounds", this.soundsRouter);
 
 	}
 }
@@ -35,8 +38,8 @@ class ApiIndex {
 		this.routers = new AppRouters(appContext.app);
 		const sapi: ScriptAPI = new ScriptAPI();
 		sapi.install(appContext, this.routers);
-		const imgApi = new ImageAPI();
-		imgApi.install(appContext, this.routers);
+		const mediaApi = new MediaAPI();
+		mediaApi.install(appContext, this.routers);
 	}
 }
 

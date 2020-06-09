@@ -13,6 +13,14 @@ interface IScriptRecord {
 	content: IScriptContent
 }
 
+interface IImageRecord {
+	name: string;
+	id: string;
+	url: string;
+	author: string
+	modification: Date
+}
+
 interface INOUser {
 	
 	/**

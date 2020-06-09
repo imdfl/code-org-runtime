@@ -73,6 +73,7 @@ class CodeHost {
             scripts: null,
             images: fsPath.join(__dirname, "images"),
             rendered: fsPath.join(__dirname, "rendered"),
+            sandbox: fsPath.join(__dirname, "sandbox")
         };
         appPaths.scripts = fsPath.join(appPaths.data, "scripts");
         fs.mkdirSync(appPaths.rendered, { recursive: true });
