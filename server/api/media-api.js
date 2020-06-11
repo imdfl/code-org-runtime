@@ -7,6 +7,10 @@ const NodeUtils = require("util");
 const code_utils_1 = require("../utils/code-utils");
 const base_api_1 = require("./base-api");
 class MediaAPI extends base_api_1.BaseAPI {
+    constructor() {
+        super();
+        this.fileExists = NodeUtils.promisify(fs.exists);
+    }
     install(appContext, routers) {
         super.install(appContext, routers);
         this._defaultImagePath = fsPath.join(appContext.paths.sandbox, "images", "default.png");
@@ -28,8 +32,12 @@ class MediaAPI extends base_api_1.BaseAPI {
             return this.sendObjectResponse(res, "user not found", null);
         }
         const imageId = code_utils_1.CodeUtils.makeImageName(req.params.name);
-        const imagePath = fsPath.join(user.path, "images", `${imageId}.png`);
-        const exists = await NodeUtils.promisify(fs.exists)(imagePath);
+        let imagePath = fsPath.join(user.path, "images", `${imageId}.gif`);
+        let exists = await this.fileExists(imagePath);
+        if (!exists) {
+            imagePath = fsPath.join(user.path, "images", `${imageId}.png`);
+            exists = await this.fileExists(imagePath);
+        }
         return res.sendFile(exists ? imagePath : this._defaultImagePath);
         // const lstat = NodeUtils.promisify(fs.lstat);
         // const ret = new Array<Pick<INOServerUser, "name" | "id" | "clientPath">>();
@@ -53,7 +61,7 @@ class MediaAPI extends base_api_1.BaseAPI {
             return {
                 name: f,
                 id: name,
-                url: `/images/${user.id}/${name}.png`,
+                url: `/images/${user.id}/${name}`,
                 author: user.name,
                 modification: new Date()
             };

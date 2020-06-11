@@ -11,11 +11,16 @@ import { BaseAPI } from "./base-api";
 
 export class MediaAPI extends BaseAPI  {
 	private _defaultImagePath: string;
+	private readonly fileExists: (url: fs.PathLike) => Promise<boolean>;
+
+	constructor() {
+		super();
+		this.fileExists = NodeUtils.promisify(fs.exists);
+	}
 
 	public install(appContext: IAppContext, routers: IAppRouters): void {
 		super.install(appContext, routers);
 		this._defaultImagePath = fsPath.join(appContext.paths.sandbox, "images", "default.png");
-
 		const api = routers.imagesRouter; // this._apiRouter = express.Router();
 		api.get("/list/:user", this.listUserImages.bind(this));
 		api.get("/:user/:name", this.loadImage.bind(this));
@@ -39,8 +44,13 @@ export class MediaAPI extends BaseAPI  {
 			return this.sendObjectResponse(res, "user not found", null);
 		}
 		const imageId = CodeUtils.makeImageName(req.params.name);
-		const imagePath = fsPath.join(user.path, "images", `${imageId}.png`);
-		const exists = await NodeUtils.promisify(fs.exists)(imagePath);
+		let imagePath = fsPath.join(user.path, "images", `${imageId}.gif`);
+		let exists = await this.fileExists(imagePath);
+		if (!exists) {
+			imagePath = fsPath.join(user.path, "images", `${imageId}.png`);
+			exists = await this.fileExists(imagePath);
+	
+		}
 		return res.sendFile(exists? imagePath : this._defaultImagePath); 
 		// const lstat = NodeUtils.promisify(fs.lstat);
 		// const ret = new Array<Pick<INOServerUser, "name" | "id" | "clientPath">>();
@@ -65,7 +75,7 @@ export class MediaAPI extends BaseAPI  {
 			return {
 				name: f,
 				id: name,
-				url: `/images/${user.id}/${name}.png`,
+				url: `/images/${user.id}/${name}`,
 				author: user.name,
 				modification: new Date()
 			};

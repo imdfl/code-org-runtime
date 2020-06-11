@@ -5,7 +5,8 @@ import { DrawState } from './draw-state.js';
 import { TextFactory } from './text-factory.js';
 import { createGameInput } from "./game-input.js";
 export class NoWorld {
-    constructor(doc, root) {
+    constructor(doc, _imagesPath, root) {
+        this._imagesPath = _imagesPath;
         this.root = root;
         this._startTime = Date.now();
         this._frameCount = 0;
@@ -44,6 +45,44 @@ export class NoWorld {
         this._rects = new RectFactory(dom);
         this._text = new TextFactory(dom);
         this._ellipses = new EllipseFactory(dom);
+        $root.on("mousedown", ".sjs-sprite", this.onSpriteMouseDown.bind(this));
+        $root.on("mouseup", ".sjs-sprite", this.onSpriteMouseUp.bind(this));
+        $root.on("mouseenter", ".sjs-sprite", this.onSpriteMouseEnter.bind(this));
+        $root.on("mouseleave", ".sjs-sprite", this.onSpriteMouseLeave.bind(this));
+    }
+    /**
+     * The path to the user images on the server
+     */
+    get imagesPath() {
+        return this._imagesPath;
+    }
+    makeSpritePath(name) {
+        if (!name) {
+            return "";
+        }
+        if (name[0] === '/' || NoWorld.HTTP_RE.test(name)) {
+            return name;
+        }
+        name = name.trim().toLowerCase();
+        if (!name) {
+            return "";
+        }
+        name = name.replace(NoWorld.IMAGE_RE, "");
+        // if (!/\.png$/.test(name)) {
+        // 	name += ".png";
+        // }
+        return [this._imagesPath, name].join('/');
+        // const parts = name.split('/');
+        // if (parts[0] !== "") {
+        // 	parts.splice(0, 0, "");
+        // }
+        // if (parts[1] !== "images") {
+        // 	parts.splice(1, 0, "images");
+        // }
+        // if (parts[2] === name) {
+        // 	parts.splice(2, 0, "sprites");
+        // }
+        // return parts.join('/');
     }
     get input() {
         return this._input;
@@ -56,7 +95,8 @@ export class NoWorld {
         this._rects.update();
         this._ellipses.update();
         this._text.update();
-        this._input.update();
+        this._input.setupNextFrame();
+        SpriteWrapper.postUpdateSprites();
     }
     setBackground(color) {
         this.bg.color = color;
@@ -77,7 +117,7 @@ export class NoWorld {
         return this._scene;
     }
     createSprite(x, y) {
-        return new SpriteWrapper(this._scene, x, y);
+        return new SpriteWrapper(this, x, y);
     }
     get width() {
         return this.sceneWidth;
@@ -100,5 +140,31 @@ export class NoWorld {
     get seconds() {
         return (Date.now() - this._startTime) / 1000;
     }
+    onSpriteMouseDown(event) {
+        const s = SpriteWrapper.spriteFromEvent(event);
+        if (s) {
+            s.onMouseDown(event);
+        }
+    }
+    onSpriteMouseUp(event) {
+        const s = SpriteWrapper.spriteFromEvent(event);
+        if (s) {
+            s.onMouseUp(event);
+        }
+    }
+    onSpriteMouseEnter(event) {
+        const s = SpriteWrapper.spriteFromEvent(event);
+        if (s) {
+            s.onMouseEnter(event);
+        }
+    }
+    onSpriteMouseLeave(event) {
+        const s = SpriteWrapper.spriteFromEvent(event);
+        if (s) {
+            s.onMouseLeave(event);
+        }
+    }
 }
+NoWorld.IMAGE_RE = /\.(?:png|gif)$/i;
+NoWorld.HTTP_RE = /^https?:\//i;
 //# sourceMappingURL=no-world.js.map

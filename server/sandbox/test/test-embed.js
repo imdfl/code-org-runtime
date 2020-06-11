@@ -1,106 +1,9 @@
-import { SpriteWrapper } from '../emulator/sprite-wrapper.js';
-import { NoWorld } from "../emulator/no-world.js";
+import { createWorld, createSprite, fill, rect, ellipse, text, textSize, background, keyDown, keyWentDown, mousePressedOver, mouseWentDown, drawSprites, getKeyValue, setKeyValue, playSound, randomNumber } from "../emulator/api.js";
 (function ($, imagesPath) {
     $(() => {
-        function log(...args) {
-            console.log.apply(console, args);
-        }
-        function fill(color) {
-            World.drawState.fillColor = color;
-            // TODO
-        }
-        function noFill() {
-            World.drawState.fillColor = "transparent";
-        }
-        function stroke(color) {
-            World.drawState.strokeColor = color;
-        }
-        function noStroke() {
-            World.drawState.strokeWeight = 0;
-        }
-        function strokeWeight(weight) {
-            World.drawState.strokeWeight = weight;
-        }
-        function playSound(url, repeat = false) {
-            log("playsound", url, repeat);
-        }
-        function createSprite(x, y) {
-            return World.createSprite(x, y);
-        }
-        function background(color) {
-            World.setBackground(color);
-        }
-        function keyWentDown(key) {
-            return false;
-            // TODO
-        }
-        function keyWentUp(key) {
-            return false;
-            // TODO
-        }
-        function keyDown(key) {
-            return World.input.isPressed(key);
-            // TODO
-        }
-        function mouseWentDown(button) {
-            return false;
-        }
-        function mousePressedOver(sprite) {
-            return false;
-        }
-        function mouseIsOver(sprite) {
-            return false; // TODO
-        }
-        function drawSprites() {
-            SpriteWrapper.updateSprites();
-        }
-        function getKeyValue(key, callback) {
-            return null;
-        }
-        function setKeyValue(key, value, callback) {
-        }
-        function randomNumber(min, max) {
-            if (min > max) {
-                const t = min;
-                min = max;
-                max = t;
-            }
-            const range = max - min;
-            if (range === 0) {
-                return min;
-            }
-            return min + Math.round(Math.random() * range);
-        }
-        function text(txt, x, y, ...args) {
-            World.text.addText({
-                text: String(txt),
-                x,
-                y,
-                color: World.drawState.fillColor,
-                size: World.drawState.textSize,
-                font: World.drawState.textFont
-            });
-        }
-        function rect(x, y, width, height) {
-            const d = World.drawState;
-            World.rects.addRect({
-                x, y, width, height, strokeColor: d.strokeColor, strokeWeight: d.strokeWeight,
-                fillColor: d.fillColor
-            });
-        }
-        function ellipse(x, y, width, height) {
-            const d = World.drawState;
-            World.ellipses.addEllipse({
-                x, y, width, height, strokeColor: d.strokeColor, strokeWeight: d.strokeWeight,
-                fillColor: d.fillColor
-            });
-        }
-        function textSize(size) {
-            World.drawState.textSize = size;
-        }
-        function textFont(font) {
-            World.drawState.textFont = font;
-        }
+        const World = createWorld(imagesPath);
+        const ticker = World.scene.Ticker(paint);
+        ticker.run();
         function paint(t) {
             try {
                 const f = eval("draw");
@@ -113,10 +16,6 @@ import { NoWorld } from "../emulator/no-world.js";
             catch (e) {
             }
         }
-        SpriteWrapper.imagePath = imagesPath;
-        const World = new NoWorld(document, "#sandbox");
-        const ticker = World.scene.Ticker(paint);
-        ticker.run();
         /************************* Begin client code ****************************** */
         playSound("2013-10-20_Preparation_2_-_David_Fesliyan.mp3", true);
         // TODO
@@ -709,6 +608,7 @@ import { NoWorld } from "../emulator/no-world.js";
             for (var i = 0; i < torpedos.length; i++) {
                 torpedo = torpedos[i];
                 if (torpedo.isTouching(player)) {
+                    // torpedo.isTouching(player);
                     if (shield === false) {
                         player.destroy();
                         player = null;
@@ -978,5 +878,5 @@ import { NoWorld } from "../emulator/no-world.js";
             });
         }
     });
-}(window.jQuery, "/images/nadan"));
+}(window.jQuery, "/userimages/nadan"));
 //# sourceMappingURL=test-embed.js.map

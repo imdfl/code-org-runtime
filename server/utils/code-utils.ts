@@ -2,7 +2,7 @@
 
 export class CodeUtils {
 	private static NAME_RE = /\.js$/i;
-	private static IMAGE_RE = /\.png$/i;
+	private static IMAGE_RE = /\.png|gif$/i;
 	public static makeScriptName(name: string): string {
 		return (name || "").trim().replace(CodeUtils.NAME_RE, "");
 	}

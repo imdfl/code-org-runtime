@@ -1,20 +1,66 @@
 import { ISJSSprite, ISJSScene } from "./interfaces/sjs";
+import { NoWorld } from './no-world';
+
+
+function eventToButtonName(event: MouseEvent): string {
+	if (event.button === 0) {
+		return "left";
+	}
+	if (event.button === 2) {
+		return "right";
+	}
+	if (event.button === 1) {
+		return "middle";
+	}
+}
+
+function addButtonName(current: string, name: string): string {
+	if (!current) {
+		return name;
+	}
+	if (!name) {
+		return current;
+	}
+	const parts = current.split(' ');
+	for (const part of parts) {
+		if (part === name) {
+			return current;
+		}
+	}
+	parts.push(name);
+	return parts.join(' ');
+}
+
+function removeButtonName(current: string, name: string): string {
+	if (!current) {
+		return name;
+	}
+	if (!name) {
+		return current;
+	}
+	const parts = current.split(' ');
+	const ind = parts.indexOf(name);
+	if (ind >= 0) {
+		parts.splice(ind, 1);
+	}
+	return parts.join(' ');
+}
 
 export class SpriteWrapper {
 	private static readonly _allSprites: Array<SpriteWrapper> = [];
-	private static _imagePath: string;
 	private sprite: ISJSSprite;
 	private _name: string;
 	private _width = 0;
 	private _height = 0;
 
+	private _isMouseUp = "";
+	private _isMouseDown = "";
+	private _isPressed = "";
+	private _isMouseIn = false;
+
+
 	public static get allSprites(): Array<SpriteWrapper> {
 		return this._allSprites.slice();
-	}
-
-	public static set imagePath(path: string) {
-		// remove training slash
-		SpriteWrapper._imagePath = (path || "").trim().replace(/\/$/, "");
 	}
 
 	public static updateSprites(): void {
@@ -29,37 +75,86 @@ export class SpriteWrapper {
 		}
 	}
 
-	public static makeSpritePath(name: string): string {
-		name = (name || "").trim().toLowerCase();
-		if (!name) {
-			return "";
+	public static postUpdateSprites(): void {
+		for (const s of SpriteWrapper._allSprites) {
+			try {
+				s.postFrameUpdate();
+			}
+			catch (e) {
+				console.log("update error", e);
+			}
 		}
-		if (!/\.png$/.test(name)) {
-			name += ".png";
-		}
-		if (name[0] === '/') {
-			return name;
-		}
-		return [SpriteWrapper._imagePath, name].join('/');
-		// const parts = name.split('/');
-		// if (parts[0] !== "") {
-		// 	parts.splice(0, 0, "");
-		// }
-		// if (parts[1] !== "images") {
-		// 	parts.splice(1, 0, "images");
-		// }
-		// if (parts[2] === name) {
-		// 	parts.splice(2, 0, "sprites");
-		// }
-		// return parts.join('/');
 	}
 
+	public static spriteFromEvent(event: Event): SpriteWrapper {
+		return $(event && event.currentTarget).data("sprite-wrapper");
+	}
 
-	public constructor(private scene: ISJSScene, x: number = 0, y: number) {
-		this.sprite = scene.Sprite();
+	public constructor(private world: NoWorld, x: number = 0, y: number) {
+		this.sprite = world.scene.Sprite();
+		$(this.sprite.dom).data("sprite-wrapper", this);
 		this.sprite.setX(x);
 		this.sprite.setY(y);
 		SpriteWrapper._allSprites.push(this);
+	}
+
+	public onMouseUp(event: MouseEvent): void {
+		this._isMouseDown = "";
+		this._isMouseUp = addButtonName(this._isMouseUp, eventToButtonName(event));
+		this._isPressed = "";
+	}
+
+	public onMouseEnter(event: MouseEvent): void {
+		this._isMouseIn = true;
+	}
+
+	public onMouseLeave(event: MouseEvent): void {
+		this._isMouseIn = false;
+	}
+
+	public onMouseDown(event: MouseEvent): void {
+		const name = eventToButtonName(event);
+		this._isMouseDown = addButtonName(this._isMouseDown, name);
+		this._isMouseUp = "";
+		this._isPressed = addButtonName(this._isPressed, name);
+	}
+
+	public postFrameUpdate() {
+		this._isMouseUp = "";
+		this._isMouseDown = "";
+	}
+
+	public isMouseOver() {
+		return this._isMouseIn;
+	}
+
+	/**
+	 * Returns true if the specified mouse button was pressed in the last frame on this  sprite
+	 * @param button "left", "right" or "middle"
+	 */
+	public isMouseDown(button: string): boolean {
+		button = (button || "").trim().toLowerCase().replace("button", "");
+		return this._isMouseDown.indexOf(button) >= 0;
+	}
+
+	/**
+	 * Returns true if the specified mouse button was depressed in the last frame, after
+	 * being pressed down earlier on this  sprite
+	 * @param button "left", "right" or "middle"
+	 */
+	public isMouseUp(button: string) {
+		button = (button || "").trim().toLowerCase().replace("button", "");
+		return this._isMouseUp.indexOf(button) >= 0;
+	}
+
+	/**
+	 * Returns true if the specified mouse button is currently pressed after an initial press
+	 * on this sprite
+	 * @param button "left", "right" or "middle"
+	 */
+	public isMousePressed(button: string) {
+		button = (button || "").trim().toLowerCase().replace("button", "");
+		return this._isPressed.indexOf(button) >= 0;
 	}
 
 	public get x() {
@@ -68,6 +163,14 @@ export class SpriteWrapper {
 
 	public set x(newx: number) {
 		this.sprite.setX(newx);
+	}
+
+	public set visible(v: boolean) {
+		this.sprite.setVisible(v);
+	}
+
+	public get visible(): boolean {
+		return this.sprite.isVisible();
 	}
 
 	public get y() {
@@ -80,6 +183,7 @@ export class SpriteWrapper {
 
 	public destroy(): void {
 		if (this.sprite) {
+			$(this.sprite.dom).data("sprite-wrapper", null);
 			this.sprite.remove();
 			this.sprite = null;
 		}
@@ -90,8 +194,11 @@ export class SpriteWrapper {
 	}
 
 	public setAnimation(name: string) {
-		const url = SpriteWrapper.makeSpritePath(name);
-		this.scene.loadImages([url], () => {
+		const url = this.world.makeSpritePath(name);
+		this.world.scene.loadImages([url], () => {
+			if (!this.sprite) { // destroyed since we've made the request
+				return;
+			}
 			this.sprite.loadImg(url, false);
 			const w = this.width || this.sprite.img.width;
 			const h = this.height || this.sprite.img.height;

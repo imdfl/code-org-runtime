@@ -7,7 +7,7 @@ export class RecyclableDOMObject {
     }
     applyProperties(props) {
         Object.keys(props).forEach(key => {
-            if (key !== "type" && props[key] !== this[key]) {
+            if (key !== "type" && (props[key] !== this[key])) {
                 this[key] = props[key];
             }
         });

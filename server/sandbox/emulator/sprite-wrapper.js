@@ -1,19 +1,61 @@
+function eventToButtonName(event) {
+    if (event.button === 0) {
+        return "left";
+    }
+    if (event.button === 2) {
+        return "right";
+    }
+    if (event.button === 1) {
+        return "middle";
+    }
+}
+function addButtonName(current, name) {
+    if (!current) {
+        return name;
+    }
+    if (!name) {
+        return current;
+    }
+    const parts = current.split(' ');
+    for (const part of parts) {
+        if (part === name) {
+            return current;
+        }
+    }
+    parts.push(name);
+    return parts.join(' ');
+}
+function removeButtonName(current, name) {
+    if (!current) {
+        return name;
+    }
+    if (!name) {
+        return current;
+    }
+    const parts = current.split(' ');
+    const ind = parts.indexOf(name);
+    if (ind >= 0) {
+        parts.splice(ind, 1);
+    }
+    return parts.join(' ');
+}
 export class SpriteWrapper {
-    constructor(scene, x = 0, y) {
-        this.scene = scene;
+    constructor(world, x = 0, y) {
+        this.world = world;
         this._width = 0;
         this._height = 0;
-        this.sprite = scene.Sprite();
+        this._isMouseUp = "";
+        this._isMouseDown = "";
+        this._isPressed = "";
+        this._isMouseIn = false;
+        this.sprite = world.scene.Sprite();
+        $(this.sprite.dom).data("sprite-wrapper", this);
         this.sprite.setX(x);
         this.sprite.setY(y);
         SpriteWrapper._allSprites.push(this);
     }
     static get allSprites() {
         return this._allSprites.slice();
-    }
-    static set imagePath(path) {
-        // remove training slash
-        SpriteWrapper._imagePath = (path || "").trim().replace(/\/$/, "");
     }
     static updateSprites() {
         for (const s of SpriteWrapper._allSprites) {
@@ -26,35 +68,80 @@ export class SpriteWrapper {
             }
         }
     }
-    static makeSpritePath(name) {
-        name = (name || "").trim().toLowerCase();
-        if (!name) {
-            return "";
+    static postUpdateSprites() {
+        for (const s of SpriteWrapper._allSprites) {
+            try {
+                s.postFrameUpdate();
+            }
+            catch (e) {
+                console.log("update error", e);
+            }
         }
-        if (!/\.png$/.test(name)) {
-            name += ".png";
-        }
-        if (name[0] === '/') {
-            return name;
-        }
-        return [SpriteWrapper._imagePath, name].join('/');
-        // const parts = name.split('/');
-        // if (parts[0] !== "") {
-        // 	parts.splice(0, 0, "");
-        // }
-        // if (parts[1] !== "images") {
-        // 	parts.splice(1, 0, "images");
-        // }
-        // if (parts[2] === name) {
-        // 	parts.splice(2, 0, "sprites");
-        // }
-        // return parts.join('/');
+    }
+    static spriteFromEvent(event) {
+        return $(event && event.currentTarget).data("sprite-wrapper");
+    }
+    onMouseUp(event) {
+        this._isMouseDown = "";
+        this._isMouseUp = addButtonName(this._isMouseUp, eventToButtonName(event));
+        this._isPressed = "";
+    }
+    onMouseEnter(event) {
+        this._isMouseIn = true;
+    }
+    onMouseLeave(event) {
+        this._isMouseIn = false;
+    }
+    onMouseDown(event) {
+        const name = eventToButtonName(event);
+        this._isMouseDown = addButtonName(this._isMouseDown, name);
+        this._isMouseUp = "";
+        this._isPressed = addButtonName(this._isPressed, name);
+    }
+    postFrameUpdate() {
+        this._isMouseUp = "";
+        this._isMouseDown = "";
+    }
+    isMouseOver() {
+        return this._isMouseIn;
+    }
+    /**
+     * Returns true if the specified mouse button was pressed in the last frame on this  sprite
+     * @param button "left", "right" or "middle"
+     */
+    isMouseDown(button) {
+        button = (button || "").trim().toLowerCase().replace("button", "");
+        return this._isMouseDown.indexOf(button) >= 0;
+    }
+    /**
+     * Returns true if the specified mouse button was depressed in the last frame, after
+     * being pressed down earlier on this  sprite
+     * @param button "left", "right" or "middle"
+     */
+    isMouseUp(button) {
+        button = (button || "").trim().toLowerCase().replace("button", "");
+        return this._isMouseUp.indexOf(button) >= 0;
+    }
+    /**
+     * Returns true if the specified mouse button is currently pressed after an initial press
+     * on this sprite
+     * @param button "left", "right" or "middle"
+     */
+    isMousePressed(button) {
+        button = (button || "").trim().toLowerCase().replace("button", "");
+        return this._isPressed.indexOf(button) >= 0;
     }
     get x() {
         return this.sprite.x;
     }
     set x(newx) {
         this.sprite.setX(newx);
+    }
+    set visible(v) {
+        this.sprite.setVisible(v);
+    }
+    get visible() {
+        return this.sprite.isVisible();
     }
     get y() {
         return this.sprite.y;
@@ -64,6 +151,7 @@ export class SpriteWrapper {
     }
     destroy() {
         if (this.sprite) {
+            $(this.sprite.dom).data("sprite-wrapper", null);
             this.sprite.remove();
             this.sprite = null;
         }
@@ -73,8 +161,11 @@ export class SpriteWrapper {
         }
     }
     setAnimation(name) {
-        const url = SpriteWrapper.makeSpritePath(name);
-        this.scene.loadImages([url], () => {
+        const url = this.world.makeSpritePath(name);
+        this.world.scene.loadImages([url], () => {
+            if (!this.sprite) { // destroyed since we've made the request
+                return;
+            }
             this.sprite.loadImg(url, false);
             const w = this.width || this.sprite.img.width;
             const h = this.height || this.sprite.img.height;

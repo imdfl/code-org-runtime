@@ -138,8 +138,6 @@ export interface ISJSSprite {
 	 */
 	canvasUpdate(layer: ISJSLayer): any;
 
-
-
 	setX(x): number;
 
 	setY(y): number;
@@ -285,6 +283,8 @@ export interface ISJSSprite {
 	 */
 	explode4(x?: number, y?: number, layer?: ISJSLayer): any;
 
+	setVisible(v: boolean): void;
+	isVisible(): boolean;
 
 }
 

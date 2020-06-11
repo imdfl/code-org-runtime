@@ -3,7 +3,7 @@ class GameInput {
     constructor() {
         this.pressedCombinations = {};
         this.map = {};
-        this.devices = new Devices();
+        this._devices = [];
     }
     static isNumber(n) {
         return !isNaN(parseFloat(n)) && isFinite(n);
@@ -14,9 +14,9 @@ class GameInput {
     get $root() {
         return this._$root;
     }
-    connect($root) {
+    connect($root, ...devices) {
         this._$root = $root;
-        this.devices.init(this);
+        this.initDevices(...devices);
     }
     disconnect() {
         const $body = $(this.$root[0].ownerDocument.body);
@@ -30,7 +30,7 @@ class GameInput {
             combmatch = true;
             for (j = 0, m = combs[i].length; j < m; j++) {
                 c = combs[i][j];
-                device = this.devices.findDevice(c);
+                device = this.findDeviceForSelector(c);
                 if (device == null) {
                     return false;
                 }
@@ -53,7 +53,7 @@ class GameInput {
             anyDown = false;
             for (j = 0, m = combs[i].length; j < m; j++) {
                 c = combs[i][j];
-                device = this.devices.findDevice(c);
+                device = this.findDeviceForSelector(c);
                 if (!device) {
                     return false;
                 }
@@ -81,7 +81,7 @@ class GameInput {
             // anyDown = false;
             for (j = 0, m = combs[i].length; j < m; j++) {
                 c = combs[i][j];
-                device = this.devices.findDevice(c);
+                device = this.findDeviceForSelector(c);
                 if (device == null) {
                     return false;
                 }
@@ -114,9 +114,9 @@ class GameInput {
     splitCombination(combination) {
         return combination.split("+");
     }
-    getCodes(name, device) {
-        return this.devices[device].getCodes(name);
-    }
+    // getCodes(name: string, device: string) {
+    // 	return this.devices[device].getCodes(name);
+    // }
     bind(comb, callback, preventRepeat = true) {
         const fndown = function (e) {
             if (this.isPressed(comb) && (!preventRepeat || !this.pressedCombinations[comb])) {
@@ -136,38 +136,41 @@ class GameInput {
             document.addEventListener("mouseup.gameinputbind", fnup);
         }
     }
-    update() {
-        this.devices.frameSetup();
+    setupNextFrame() {
+        for (const d of this._devices) {
+            d.setupNextFrame();
+        }
     }
-}
-GameInput.REVISION = 2;
-class Devices {
-    constructor() {
-        this.gamepad = new NOGamePad();
-        this.mouse = new NOMouse();
-        this.keyboard = new NOKeyboard();
+    initDevices(...devices) {
+        let map = {};
+        if (devices && devices.length) {
+            devices.forEach(d => { map[d] = true; });
+        }
+        else {
+            map = { gamepad: true, mouse: true, keyboard: true };
+        }
+        if ("gamepad" in map) {
+            this._devices.push(new NOGamePad(this));
+        }
+        if ("mouse" in map) {
+            this._devices.push(new NOMouse(this));
+        }
+        if ("keyboard" in map) {
+            this._devices.push(new NOKeyboard(this));
+        }
     }
-    init(input) {
-        this.mouse.init(input);
-        this.keyboard.init(input);
-        this.gamepad.init(input);
-    }
-    findDevice(combination) {
-        for (const d of [this.mouse, this.keyboard, this.gamepad]) {
-            if (d.isMine(combination)) {
+    findDeviceForSelector(s) {
+        for (const d of this._devices) {
+            if (d.isMine(s)) {
                 return d;
             }
         }
         return null;
     }
-    frameSetup() {
-        for (const d of [this.gamepad, this.mouse, this.keyboard]) {
-            d.frameSetup();
-        }
-    }
 }
+GameInput.REVISION = 2;
 class NOGamePad {
-    constructor() {
+    constructor(input) {
         this.map = {
             button: {
                 1: 0,
@@ -194,8 +197,6 @@ class NOGamePad {
                 rightanaloguevert: 3
             }
         };
-    }
-    init(input) {
         this._gameInput = input;
     }
     isMine(name) {
@@ -247,48 +248,27 @@ class NOGamePad {
             num: gpbutton
         };
     }
-    frameSetup() {
+    setupNextFrame() {
     }
 }
 NOGamePad.GAMEPAD_ANALOGUE_THRESHOLD = 0.5;
 class NOKeyboard {
-    constructor() {
+    constructor(input) {
         this.down = {};
         this.up = {};
-        this.map = {
-            backspace: 8, tab: 9, enter: 13, shift: 16, control: 17, alt: 18, capslock: 20, altgr: 225, del: 46,
-            pagedown: 33, pageup: 34, end: 35, home: 36,
-            left: 37, up: 38, right: 39, down: 40,
-            boardplus: 187, numpadplus: 107, plus: ['boardplus', 'numpadplus'],
-            boardhyphen: 189, numpadhyphen: 109, hyphen: ['boardhyphen', 'numpadhyphen'], minus: 'hyphen',
-            space: 32, leftwindows: 91, rightwindows: 92, windows: ['leftwindows', 'rightwindows'],
-            a: 65, b: 66, c: 67, d: 68, e: 69, f: 70, g: 71, h: 72, i: 73, j: 74,
-            k: 75, l: 76, m: 77, n: 78, o: 79, p: 80, q: 81, r: 82, s: 83, t: 84,
-            u: 85, v: 86, w: 87, x: 88, y: 89, z: 90,
-            numpad0: 96, numpad1: 97, numpad2: 98, numpad3: 99, numpad4: 100, numpad5: 101,
-            numpad6: 102, numpad7: 103, numpad8: 104, numpad9: 105,
-            board0: 48, board1: 49, board2: 50, board3: 51, board4: 52,
-            board5: 53, board6: 54, board7: 55, board8: 56, board9: 57,
-            0: ['numpad0', 'board0'], 1: ['numpad1', 'board1'], 2: ['numpad2', 'board2'],
-            3: ['numpad3', 'board3'], 4: ['numpad4', 'board4'],
-            5: ['numpad5', 'board5'], 6: ['numpad6', 'board6'], 7: ['numpad7', 'board7'],
-            8: ['numpad8', 'board8'], 9: ['numpad9', 'board9']
-        };
-    }
-    init(input) {
         this._input = input;
         const $body = $(this._input.$root[0].ownerDocument.body);
         $body.on("keydown.gameinput", this._manageKeyDown.bind(this));
         $body.on("keyup.gameinput", this._manageKeyUp.bind(this));
     }
     isMine(name) {
-        return this.map[name] !== undefined;
+        return NOKeyboard.map[name] !== undefined;
     }
     /**
      * Returns an array of the keycodes represented by name
      */
     getCodes(name) {
-        const v = this.map[name];
+        const v = NOKeyboard.map[name];
         if (v !== undefined) {
             if (GameInput.isNumber(v)) {
                 return [v];
@@ -335,7 +315,7 @@ class NOKeyboard {
         }
         return false;
     }
-    frameSetup() {
+    setupNextFrame() {
         Object.keys(this.up).forEach(key => {
             if (this.up[key] >= 2) {
                 this.up[key] = 0;
@@ -362,30 +342,50 @@ class NOKeyboard {
         this.down[code] = 0;
     }
 }
+NOKeyboard.map = {
+    backspace: 8, tab: 9, enter: 13, shift: 16, control: 17, alt: 18, capslock: 20, altgr: 225, del: 46,
+    pagedown: 33, pageup: 34, end: 35, home: 36,
+    left: 37, up: 38, right: 39, down: 40,
+    boardplus: 187, numpadplus: 107, plus: ['boardplus', 'numpadplus'],
+    boardhyphen: 189, numpadhyphen: 109, hyphen: ['boardhyphen', 'numpadhyphen'], minus: 'hyphen',
+    space: 32, leftwindows: 91, rightwindows: 92, windows: ['leftwindows', 'rightwindows'],
+    a: 65, b: 66, c: 67, d: 68, e: 69, f: 70, g: 71, h: 72, i: 73, j: 74,
+    k: 75, l: 76, m: 77, n: 78, o: 79, p: 80, q: 81, r: 82, s: 83, t: 84,
+    u: 85, v: 86, w: 87, x: 88, y: 89, z: 90,
+    numpad0: 96, numpad1: 97, numpad2: 98, numpad3: 99, numpad4: 100, numpad5: 101,
+    numpad6: 102, numpad7: 103, numpad8: 104, numpad9: 105,
+    board0: 48, board1: 49, board2: 50, board3: 51, board4: 52,
+    board5: 53, board6: 54, board7: 55, board8: 56, board9: 57,
+    0: ['numpad0', 'board0'], 1: ['numpad1', 'board1'], 2: ['numpad2', 'board2'],
+    3: ['numpad3', 'board3'], 4: ['numpad4', 'board4'],
+    5: ['numpad5', 'board5'], 6: ['numpad6', 'board6'], 7: ['numpad7', 'board7'],
+    8: ['numpad8', 'board8'], 9: ['numpad9', 'board9']
+};
 class NOMouse {
-    constructor() {
+    constructor(input) {
         this.down = {};
         this.up = {};
         this.frameMove = false;
-        this.map = {
-            mouseleft: 1,
-            mousecenter: 2,
-            mouseright: 3,
-            mousecentre: 'mousecenter',
-            click: ['mouseleft', 'mouseright', 'mousecenter']
-        };
-    }
-    init(input) {
         this._input = input;
         this._input.$root.on("mousedown.gameinput", this._manageMouseDown.bind(this));
         this._input.$root.on("mouseup.gameinput", this._manageMouseUp.bind(this));
         this._input.$root.on("mousemoved.gameinput", this._manageMouseMove.bind(this));
     }
+    static getButtonName(name) {
+        if (!name) {
+            return "";
+        }
+        if (name in NOMouse.map) {
+            return name;
+        }
+        name = (name || "").toLowerCase();
+        return NOMouse.selectorMap[name] || name;
+    }
     isMine(name) {
-        return this.map[name] !== undefined;
+        return NOMouse.map[NOMouse.getButtonName(name)] !== undefined;
     }
     getCodes(name) {
-        const v = this.map[name];
+        const v = NOMouse.map[NOMouse.getButtonName(name)];
         if (v !== undefined) {
             if (GameInput.isNumber(v)) {
                 return [v];
@@ -436,7 +436,7 @@ class NOMouse {
         return false;
     }
     _manageMouseDown(event) {
-        const code = event.which;
+        const code = event.button;
         if (!this.down[code]) {
             this.down[code] = 1;
         }
@@ -446,9 +446,9 @@ class NOMouse {
         this.up[code] = 0;
     }
     _manageMouseUp(event) {
-        const code = event.which;
+        const code = event.button;
         if (!this.up[code]) {
-            this.down[code] = 1;
+            this.up[code] = 1;
         }
         else {
             this.up[code]++;
@@ -458,15 +458,22 @@ class NOMouse {
     _manageMouseMove(event) {
         this.frameMove = true;
     }
-    frameSetup() {
+    setupNextFrame() {
         this.frameMove = false;
-        Object.keys(this.up).forEach(key => {
-            if (this.up[key] >= 2) {
-                this.up[key] = 0;
-            }
-        });
+        this.up = {};
     }
 }
+NOMouse.map = {
+    mouseleft: 0,
+    mousecenter: 1,
+    mouseright: 2,
+    mousecentre: 'mousecenter',
+    click: ['mouseleft', 'mouseright', 'mousecenter']
+};
+NOMouse.selectorMap = {
+    leftbutton: "mouseleft",
+    rightbutton: "mouseright"
+};
 export const createGameInput = () => {
     return new GameInput();
 };

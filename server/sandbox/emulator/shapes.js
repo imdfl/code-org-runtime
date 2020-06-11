@@ -10,9 +10,6 @@ export class NOSVGShape extends RecyclableDOMObject {
         this.element = svg;
     }
     compareTo(req) {
-        if (req.type !== "rect") {
-            return Similarity.None;
-        }
         const other = req;
         if (other.width !== this.width || other.height !== this.height
             || other.strokeColor !== this.strokeColor || other.strokeWeight !== this.strokeWeight
@@ -26,12 +23,14 @@ export class NOSVGShape extends RecyclableDOMObject {
     }
     set width(w) {
         this._width = w;
+        this.svg.style.width = `${w}px`;
     }
     get height() {
         return this._height;
     }
     set height(h) {
         this._height = h;
+        this.svg.style.height = `${h}px`;
     }
     get strokeColor() {
         return this._strokeColor;
@@ -64,9 +63,15 @@ export class NOSVGRect extends NOSVGShape {
         }
         return super.compareTo(req);
     }
+    get width() {
+        return super.width;
+    }
     set width(w) {
         super.width = w;
         this.rect.setAttributeNS(null, "width", String(w));
+    }
+    get height() {
+        return super.height;
     }
     set height(h) {
         super.height = h;
@@ -76,13 +81,22 @@ export class NOSVGRect extends NOSVGShape {
         super.strokeColor = sc;
         this.rect.setAttributeNS(null, "stroke", sc);
     }
+    get strokeColor() {
+        return super.strokeColor;
+    }
     set strokeWeight(sw) {
         super.strokeWeight = sw;
         this.rect.setAttributeNS(null, "stroke-width", String(sw));
     }
+    get strokeWeight() {
+        return super.strokeWeight;
+    }
     set fillColor(f) {
         super.fillColor = f;
         this.rect.setAttributeNS(null, "fill", f);
+    }
+    get fillColor() {
+        return super.fillColor;
     }
 }
 export class NOSVGEllipse extends NOSVGShape {
@@ -105,6 +119,12 @@ export class NOSVGEllipse extends NOSVGShape {
         this.ellipse.setAttributeNS(null, "rx", String(r));
         this.ellipse.setAttributeNS(null, "cx", String(r));
     }
+    get width() {
+        return super.width;
+    }
+    get height() {
+        return super.height;
+    }
     set height(h) {
         super.height = h;
         const r = Math.round(h / 2);
@@ -115,13 +135,22 @@ export class NOSVGEllipse extends NOSVGShape {
         super.strokeColor = sc;
         this.ellipse.setAttributeNS(null, "stroke", sc);
     }
+    get strokeColor() {
+        return super.strokeColor;
+    }
     set strokeWeight(sw) {
         super.strokeWeight = sw;
         this.ellipse.setAttributeNS(null, "stroke-width", String(sw));
     }
+    get strokeWeight() {
+        return super.strokeWeight;
+    }
     set fillColor(f) {
         super.fillColor = f;
         this.ellipse.setAttributeNS(null, "fill", f);
+    }
+    get fillColor() {
+        return super.fillColor;
     }
 }
 //# sourceMappingURL=shapes.js.map

@@ -11,7 +11,7 @@ let CodeUtils = /** @class */ (() => {
         }
     }
     CodeUtils.NAME_RE = /\.js$/i;
-    CodeUtils.IMAGE_RE = /\.png$/i;
+    CodeUtils.IMAGE_RE = /\.png|gif$/i;
     return CodeUtils;
 })();
 exports.CodeUtils = CodeUtils;

@@ -17,7 +17,7 @@ export abstract class RecyclableDOMObject implements IRecyclableObject {
 
 	public applyProperties(props: IRecycleRequest) {
 		Object.keys(props).forEach(key => {
-			if (key !== "type" && props[key] !== this[key]) {
+			if (key !== "type" && (props[key] !== this[key])) {
 				this[key] = props[key];
 			}
 		});

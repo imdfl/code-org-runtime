@@ -17,6 +17,10 @@ export interface IAppRouters {
 	 * user images
 	 */
 	readonly imagesRouter: express.Router;
+	/**
+	 * user images
+	 */
+	readonly soundsRouter: express.Router;
 }
 
 export interface IAppPaths {

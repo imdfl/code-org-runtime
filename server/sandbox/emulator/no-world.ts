@@ -9,6 +9,9 @@ import { IGameInput, createGameInput } from "./game-input.js";
 declare var sjs: ISJS;
 
 export class NoWorld {
+	private static IMAGE_RE = /\.(?:png|gif)$/i;
+	private static HTTP_RE = /^https?:\//i;
+
 	private _scene: ISJSScene;
 	private $root: JQuery;
 	private sceneWidth: number;
@@ -28,7 +31,7 @@ export class NoWorld {
 	private _input: IGameInput;
 
 
-	public constructor(doc: HTMLDocument, private root: string | HTMLElement | JQuery) {
+	public constructor(doc: HTMLDocument, private _imagesPath: string, private root: string | HTMLElement | JQuery) {
 		this._startTime = Date.now();
 		this._frameCount = 0;
 		this._drawState = new DrawState();
@@ -69,6 +72,47 @@ export class NoWorld {
 		this._rects = new RectFactory(dom);
 		this._text = new TextFactory(dom);
 		this._ellipses = new EllipseFactory(dom);
+		$root.on("mousedown", ".sjs-sprite", this.onSpriteMouseDown.bind(this));
+		$root.on("mouseup", ".sjs-sprite", this.onSpriteMouseUp.bind(this));
+		$root.on("mouseenter", ".sjs-sprite", this.onSpriteMouseEnter.bind(this));
+		$root.on("mouseleave", ".sjs-sprite", this.onSpriteMouseLeave.bind(this));
+	}
+
+	/**
+	 * The path to the user images on the server
+	 */
+	public get imagesPath(): string {
+		return this._imagesPath;
+	}
+
+	public makeSpritePath(name: string): string {
+		if (!name) {
+			return "";
+		}
+		if (name[0] === '/' || NoWorld.HTTP_RE.test(name)) {
+			return name;
+		}
+		name = name.trim().toLowerCase();
+		if (!name) {
+			return "";
+		}
+		name = name.replace(NoWorld.IMAGE_RE, "");
+
+		// if (!/\.png$/.test(name)) {
+		// 	name += ".png";
+		// }
+		return [this._imagesPath, name].join('/');
+		// const parts = name.split('/');
+		// if (parts[0] !== "") {
+		// 	parts.splice(0, 0, "");
+		// }
+		// if (parts[1] !== "images") {
+		// 	parts.splice(1, 0, "images");
+		// }
+		// if (parts[2] === name) {
+		// 	parts.splice(2, 0, "sprites");
+		// }
+		// return parts.join('/');
 	}
 
 	public get input(): IGameInput {
@@ -84,7 +128,8 @@ export class NoWorld {
 		this._rects.update();
 		this._ellipses.update();
 		this._text.update();
-		this._input.update();
+		this._input.setupNextFrame();
+		SpriteWrapper.postUpdateSprites();
 	}
 
 	public setBackground(color: string) {
@@ -112,7 +157,7 @@ export class NoWorld {
 	}
 
 	public createSprite(x: number, y: number): SpriteWrapper {
-		return new SpriteWrapper(this._scene, x, y);
+		return new SpriteWrapper(this, x, y);
 	}
 
 	public get width() {
@@ -140,4 +185,33 @@ export class NoWorld {
 	public get seconds() {
 		return (Date.now() - this._startTime) / 1000;
 	}
+
+	private onSpriteMouseDown(event: MouseEvent) {
+		const s = SpriteWrapper.spriteFromEvent(event);
+		if (s) {
+			s.onMouseDown(event);
+		}
+	}
+
+	private onSpriteMouseUp(event: MouseEvent) {
+		const s = SpriteWrapper.spriteFromEvent(event);
+		if (s) {
+			s.onMouseUp(event);
+		}
+	}
+	private onSpriteMouseEnter(event: MouseEvent) {
+		const s = SpriteWrapper.spriteFromEvent(event);
+		if (s) {
+			s.onMouseEnter(event);
+		}
+	}
+
+	private onSpriteMouseLeave(event: MouseEvent) {
+		const s = SpriteWrapper.spriteFromEvent(event);
+		if (s) {
+			s.onMouseLeave(event);
+		}
+	}
+
+
 }

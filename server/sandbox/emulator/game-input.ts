@@ -1,17 +1,24 @@
 export type GameInputCallback = (...args: any[]) => any;
 
+type InputDevice = "mouse" | "keyboard" | "gamepad";
+
 export interface IGameInput {
-	readonly devices: any;
-	readonly pressedCombinations: any;
 	readonly $root: JQuery;
-	connect($root: JQuery): void;
+	connect($root: JQuery, ...devices: InputDevice[]): void;
 	disconnect(): void;
 	/**
 	 * Call at the END of the frame processing
 	 */
-	update(): void;
+	setupNextFrame(): void;
 	getGamepads(): Gamepad[];
+	/**
+	 * Returns true if this combination was pressed down on this frame
+	 */
 	isDown(combination: string): boolean;
+	/**
+	 * Returns true if this combination is currently pressed, no matter on which frame
+	 * action started
+	 */
 	isPressed(combination: string): boolean;
 	isUp(combination: string): boolean;
 }
@@ -22,7 +29,7 @@ class GameInput implements IGameInput {
 	public static readonly REVISION = 2;
 	public static $: JQueryStatic;
 
-	public devices: Devices;
+	private _devices: INOInputDevice[];
 	public pressedCombinations: any = {};
 	public map: any = {};
 
@@ -37,16 +44,16 @@ class GameInput implements IGameInput {
 	}
 
 	constructor() {
-		this.devices = new Devices();
+		this._devices = [];
 	}
 
 	public get $root() {
 		return this._$root;
 	}
 
-	public connect($root: JQuery) {
+	public connect($root: JQuery, ...devices: InputDevice[]) {
 		this._$root = $root;
-		this.devices.init(this);
+		this.initDevices(...devices);
 	}
 
 	public disconnect() {
@@ -67,7 +74,7 @@ class GameInput implements IGameInput {
 			combmatch = true;
 			for (j = 0, m = combs[i].length; j < m; j++) {
 				c = combs[i][j];
-				device = this.devices.findDevice(c);
+				device = this.findDeviceForSelector(c);
 
 				if (device == null) {
 					return false;
@@ -99,7 +106,7 @@ class GameInput implements IGameInput {
 			anyDown = false;
 			for (j = 0, m = combs[i].length; j < m; j++) {
 				c = combs[i][j];
-				device = this.devices.findDevice(c);
+				device = this.findDeviceForSelector(c);
 
 				if (!device) {
 					return false;
@@ -133,7 +140,7 @@ class GameInput implements IGameInput {
 			// anyDown = false;
 			for (j = 0, m = combs[i].length; j < m; j++) {
 				c = combs[i][j];
-				device = this.devices.findDevice(c);
+				device = this.findDeviceForSelector(c);
 
 				if (device == null) {
 					return false;
@@ -173,13 +180,13 @@ class GameInput implements IGameInput {
 		return combination.split("+");
 	}
 
-	getCodes(name: string, device: string) {
-		return this.devices[device].getCodes(name);
-	}
+	// getCodes(name: string, device: string) {
+	// 	return this.devices[device].getCodes(name);
+	// }
 
 	bind(comb: string, callback: GameInputCallback, preventRepeat = true) {
 
-		const fndown = function(e) {
+		const fndown = function (e) {
 			if (this.isPressed(comb) && (!preventRepeat || !this.pressedCombinations[comb])) {
 				if (preventRepeat) {
 					this.pressedCombinations[comb] = true;
@@ -192,7 +199,7 @@ class GameInput implements IGameInput {
 		this.$root.on("mousedown.gameinputbind", fndown);
 
 		if (preventRepeat) {
-			const fnup = function(e) {
+			const fnup = function (e) {
 				this.pressedCombinations[comb] = false;
 			}.bind(this);
 
@@ -201,8 +208,38 @@ class GameInput implements IGameInput {
 		}
 	}
 
-	update() {
-		this.devices.frameSetup();
+	setupNextFrame() {
+		for (const d of this._devices) {
+			d.setupNextFrame();
+		}
+	}
+
+	private initDevices(...devices: InputDevice[]) {
+		let map: { [name: string]: boolean } = {};
+		if (devices && devices.length) {
+			devices.forEach(d => { map[d] = true; });
+		}
+		else {
+			map = { gamepad: true, mouse: true, keyboard: true };
+		}
+		if ("gamepad" in map) {
+			this._devices.push(new NOGamePad(this));
+		}
+		if ("mouse" in map) {
+			this._devices.push(new NOMouse(this));
+		}
+		if ("keyboard" in map) {
+			this._devices.push( new NOKeyboard(this));
+		}
+	}
+
+	private findDeviceForSelector(s: string) {
+		for (const d of this._devices) {
+			if (d.isMine(s)) {
+				return d;
+			}
+		}
+		return null;
 	}
 
 }
@@ -212,39 +249,9 @@ interface INOInputDevice {
 	isMine(combo: string): boolean;
 	getDown(combo: string): boolean;
 	getUp(combo: string): boolean;
+	setupNextFrame(): void;
 }
 
-class Devices {
-	public gamepad: NOGamePad;
-	public mouse: NOMouse;
-	public keyboard: NOKeyboard;
-	constructor() {
-		this.gamepad = new NOGamePad();
-		this.mouse = new NOMouse();
-		this.keyboard = new NOKeyboard();
-	}
-
-	public init(input: IGameInput) {
-		this.mouse.init(input);
-		this.keyboard.init(input);
-		this.gamepad.init(input);
-	}
-
-	public findDevice(combination: string): INOInputDevice {
-		for (const d of [this.mouse, this.keyboard, this.gamepad]) {
-			if (d.isMine(combination)) {
-				return d;
-			}
-		}
-		return null;
-	}
-
-	public frameSetup(): void {
-		for (const d of [this.gamepad, this.mouse, this.keyboard]) {
-			d.frameSetup();
-		}
-	}
-}
 
 class NOGamePad implements INOInputDevice {
 	public static GAMEPAD_ANALOGUE_THRESHOLD = 0.5;
@@ -276,10 +283,7 @@ class NOGamePad implements INOInputDevice {
 	};
 	private _gameInput: IGameInput;
 
-	constructor() {
-	}
-
-	public init(input: IGameInput) {
+	constructor(input: IGameInput) {
 		this._gameInput = input;
 	}
 
@@ -342,15 +346,13 @@ class NOGamePad implements INOInputDevice {
 		};
 	}
 
-	frameSetup() {
+	setupNextFrame() {
 
 	}
 }
 
 class NOKeyboard implements INOInputDevice {
-	public down = {};
-	public up = {};
-	public map = {
+	private static map = {
 		backspace: 8, tab: 9, enter: 13, shift: 16, control: 17, alt: 18, capslock: 20, altgr: 225, del: 46,
 		pagedown: 33, pageup: 34, end: 35, home: 36,
 		left: 37, up: 38, right: 39, down: 40,
@@ -371,13 +373,12 @@ class NOKeyboard implements INOInputDevice {
 		5: ['numpad5', 'board5'], 6: ['numpad6', 'board6'], 7: ['numpad7', 'board7'],
 		8: ['numpad8', 'board8'], 9: ['numpad9', 'board9']
 	};
+	private down = {};
+	private up = {};
 
 	private _input: IGameInput;
 
-	constructor() {
-	}
-
-	init(input: IGameInput) {
+	constructor(input: IGameInput) {
 		this._input = input;
 		const $body = $(this._input.$root[0].ownerDocument.body);
 		$body.on("keydown.gameinput", this._manageKeyDown.bind(this));
@@ -386,14 +387,14 @@ class NOKeyboard implements INOInputDevice {
 
 
 	isMine(name: string) {
-		return this.map[name] !== undefined;
+		return NOKeyboard.map[name] !== undefined;
 	}
 
 	/**
 	 * Returns an array of the keycodes represented by name
 	 */
 	getCodes(name: string): Array<number> {
-		const v = this.map[name];
+		const v = NOKeyboard.map[name];
 
 		if (v !== undefined) {
 			if (GameInput.isNumber(v)) {
@@ -447,7 +448,7 @@ class NOKeyboard implements INOInputDevice {
 		return false;
 	}
 
-	frameSetup() {
+	setupNextFrame() {
 		Object.keys(this.up).forEach(key => {
 			if (this.up[key] >= 2) {
 				this.up[key] = 0;
@@ -479,22 +480,37 @@ class NOKeyboard implements INOInputDevice {
 }
 
 class NOMouse implements INOInputDevice {
-	public down = {};
-	public up = {};
-	public frameMove = false;
-	public map = {
-		mouseleft: 1,
-		mousecenter: 2,
-		mouseright: 3,
+	private static map = {
+		mouseleft: 0,
+		mousecenter: 1,
+		mouseright: 2,
 		mousecentre: 'mousecenter',
 		click: ['mouseleft', 'mouseright', 'mousecenter']
 	};
+	private static selectorMap = {
+		leftbutton: "mouseleft",
+		rightbutton: "mouseright"
+	};
+
+	private down = {};
+	private up = {};
+	private frameMove = false;
 
 	private _input: IGameInput;
-	constructor() {
+
+	private static getButtonName(name: string) {
+		if (!name) {
+			return "";
+		}
+		if (name in NOMouse.map) {
+			return name;
+		}
+
+		name = (name || "").toLowerCase();
+		return NOMouse.selectorMap[name] || name;
 	}
 
-	public init(input: IGameInput) {
+	constructor(input: IGameInput) {
 		this._input = input;
 		this._input.$root.on("mousedown.gameinput", this._manageMouseDown.bind(this));
 		this._input.$root.on("mouseup.gameinput", this._manageMouseUp.bind(this));
@@ -502,11 +518,11 @@ class NOMouse implements INOInputDevice {
 	}
 
 	public isMine(name: string) {
-		return this.map[name] !== undefined;
+		return NOMouse.map[NOMouse.getButtonName(name)] !== undefined;
 	}
 
 	public getCodes(name: string) {
-		const v = this.map[name];
+		const v = NOMouse.map[NOMouse.getButtonName(name)];
 
 		if (v !== undefined) {
 			if (GameInput.isNumber(v)) {
@@ -563,7 +579,7 @@ class NOMouse implements INOInputDevice {
 	}
 
 	_manageMouseDown(event: MouseEvent) {
-		const code = event.which;
+		const code = event.button;
 		if (!this.down[code]) {
 			this.down[code] = 1;
 		}
@@ -574,9 +590,9 @@ class NOMouse implements INOInputDevice {
 	}
 
 	_manageMouseUp(event: MouseEvent) {
-		const code = event.which;
+		const code = event.button;
 		if (!this.up[code]) {
-			this.down[code] = 1;
+			this.up[code] = 1;
 		}
 		else {
 			this.up[code]++;
@@ -588,13 +604,9 @@ class NOMouse implements INOInputDevice {
 		this.frameMove = true;
 	}
 
-	frameSetup() {
+	setupNextFrame() {
 		this.frameMove = false;
-		Object.keys(this.up).forEach(key => {
-			if (this.up[key] >= 2) {
-				this.up[key] = 0;
-			}
-		});
+		this.up = {};
 	}
 }
 

@@ -14,6 +14,9 @@ import { IAppPaths } from 'api/interfaces';
 // TODO
 // 1. Cache directory state and update it using file system watch
 // https://www.codementor.io/@stefanomaglione114/file-watcher-with-node-js-nlmscwcl6 
+// http://www.passportjs.org/docs/
+// use google oauth2, the credentials are in settings/settings.json
+// add settings service from knowsome-common
 
 require('source-map-support').install();
 
