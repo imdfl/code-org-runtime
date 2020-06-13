@@ -219,11 +219,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 	Scene.prototype.constructor = Scene;
 
-	Scene.prototype.Sprite = function SceneSprite(src, layer) {
-		// A shortcut for sjs.Sprite
-		if (layer === undefined)
-			sjs.error("When you create Sprite from the scene the layer should be specified or false.");
-		return new Sprite(this, src, layer);
+	Scene.prototype.Sprite = function SceneSprite(options) {
+		options = options || {};
+		var layer = options.layer || this.layers["default"];
+		
+		return new Sprite(layer, options);
 	};
 
 	Scene.prototype.Layer = function SceneLayer(name, options) {
@@ -327,12 +327,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		}
 
 		total = toLoad;
-		// div = overlay(0, 0, this.w, this.h);
-		// div.style.textAlign = 'center';
-		// div.style.paddingTop = (this.h / 2 - 16) + 'px';
 
-		// div.innerHTML = 'Loading';
-		// this.dom.appendChild(div);
 		scene = this;
 		error = false;
 
@@ -381,15 +376,19 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		}
 	};
 
-	Sprite = function Sprite(scene, src, layer) {
-
-		this.scene = scene;
+	Sprite = function Sprite(layer, options) {
+		layer = layer || (options && options.layer)
+		if (!layer || !layer.sprites) {
+			throw new Error("sprite constructor must receive a valid layer");
+		}
+		this.scene = layer.scene;
 		this._dirty = {};
 		this.changed = false;
 
 		// positions
 		this.y = 0;
 		this.x = 0;
+		this._bounds = { x: 0, y: 0, w: 0, h: 0 };
 		this._x_before = 0;
 		this._x_rounded = 0;
 		this._y_before = 0;
@@ -400,7 +399,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		this.yv = 0;
 		this.rv = 0;
 
-		// shape: rectangle, circle
 		this.type = "rectangle";
 
 		// newton
@@ -413,15 +411,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		// image
 		this.src = null;
 		this.img = null;
-		this.imgNaturalWidth = null;
-		this.imgNaturalHeight = null;
+		this.imgNaturalWidth = 0;
+		this.imgNaturalHeight = 0;
 
 		// width and height of the sprite view port
-		this.w = null;
-		this.h = null;
-
-		this.effectiveWidth = 0;
-		this.effectiveHeight = 0;
+		this.w = 0;
+		this.h = 0;
 
 		// offsets of the image within the viewport
 		this.xoffset = 0;
@@ -442,66 +437,50 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		this.opacity = 1;
 		this.color = false;
 
-		this.id = ++nb_sprite;
+		this.id = String(++nb_sprite);
 
 		// necessary to get set
-		this.layer = null;
+		this.layer = layer;
 
 		this._visible = true;
 
-		var value, target, setF, first_char, d, p, properties;
+		options = options || {};
 
-		// if it doesn't seems to kouak like a Layer object
-		if (layer) {
-			// this is a layer object
-			if (layer.sprites) {
-				this.layer = layer;
-			} else {
-				// we can receive things like this
-				// {x: 10, y: 10, w: 10, h: 50, size: [20, 30], layer: var}
-				properties = layer;
-
-				// this is the messy magic options initializer code
-				for (p in properties) {
-					if (properties.hasOwnProperty(p)) {
-						value = properties[p];
-						target = this[p];
-						if (typeof target === "function") {
-							this[p].apply(this, value);
-						}
-						else if (target !== undefined) {
-							// this is necessary to set cache value properly
-							first_char = p.charAt(0);
-							if ((first_char === 'x' || first_char === 'y') && p.length > 1) {
-								setF = 'set' + first_char.toUpperCase() + p.charAt(1).toUpperCase() + p.slice(2);
-							} else {
-								setF = 'set' + first_char.toUpperCase() + p.slice(1);
-							}
-							if (this[setF]) {
-								this[setF].apply(this, [value]);
-							} else {
-								// necessary for layer option
-								this[p] = value;
-							}
-						}
-					}
-				}
+		var map = {
+			x: this.setX,
+			y: this.setY,
+			xoffset: this.setXOffset,
+			yoffset: this.setYOffset,
+			xscale: this.setXScale,
+			yscale: this.setYscale,
+		};
+		var self = this;
+		var setter;
+		// this is the messy magic options initializer code
+		Object.keys(options).forEach(function(p) {
+			var value = options[p];
+			var target = self[p];
+			if (typeof target === "function") {
+				target.apply(self, value);
+				return;
 			}
-		}
+			setter = map[String(p).toLowerCase()];
+			if (!setter) {
+				console.warn("Unknown sprite init prop", p);
+				return;
+			}
+			setter.call(self, value);
+			// this is necessary to set cache value properly
+		});
 
-		// can be set by the properties
-		if (this.layer === undefined || layer === undefined) {
-			this.layer = scene.layers['default'];
-		}
 
-		if (this.layer) {
-			d = doc.createElement('div');
-			d.style.position = 'absolute';
-			d.className = "sjs-sprite";
-			this.dom = d;
-			this.layer.dom.appendChild(d);
-		}
-		if (src) {
+		var	d = doc.createElement('div');
+		d.style.position = 'absolute';
+		d.className = "sjs-sprite";
+		this.dom = d;
+		this.layer.dom.appendChild(d);
+
+		if (options.src) {
 			this.loadImg(src);
 		}
 		return this;
@@ -520,7 +499,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		return this._visible;
 	}
 
-
+	Sprite.prototype.setDirty = function(prop) {
+		this._dirty[prop] = true;
+		this.changed = true;
+	}
 
 	/* boilerplate setter functions */
 
@@ -528,28 +510,26 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		this.x = value;
 		// this secessary for the physic
 		this._x_rounded = value | 0;
-		this.changed = true;
+		this.setDirty("x");
 		return this;
 	};
 
 	Sprite.prototype.setY = function setY(value) {
 		this.y = value;
 		this._y_rounded = value | 0;
-		this.changed = true;
+		this.setDirty("y");
 		return this;
 	};
 
 	Sprite.prototype.setW = function setW(value) {
 		this.w = value;
-		this._dirty.w = true;
-		this.changed = true;
+		this.setDirty("w");
 		return this;
 	};
 
 	Sprite.prototype.setH = function setH(value) {
 		this.h = value;
-		this._dirty.h = true;
-		this.changed = true;
+		this.setDirty("h");
 		return this;
 	};
 
@@ -590,15 +570,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 	Sprite.prototype.setXScale = function setXscale(value) {
 		this.xscale = value;
-		this._dirty.xscale = true;
-		this.changed = true;
+		this.setDirty("xscale");
 		return this;
 	};
 
 	Sprite.prototype.setYScale = function setYscale(value) {
 		this.yscale = value;
-		this._dirty.yscale = true;
-		this.changed = true;
+		this.setDirty("yscale");
 		return this;
 	};
 
@@ -722,41 +700,50 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 	};
 
 	Sprite.prototype.applyVelocity = function (ticks) {
-		if (ticks === undefined)
+		if (ticks === undefined) {
 			ticks = 1;
-		if (this.xv !== 0)
+		}
+		if (this.xv !== 0) {
 			this.setX(this.x + this.xv * ticks);
-		if (this.yv !== 0)
+		}
+		if (this.yv !== 0) {
 			this.setY(this.y + this.yv * ticks);
-		if (this.rv !== 0)
+		}
+		if (this.rv !== 0) {
 			this.setAngle(this.angle + this.rv * ticks);
+		}
 		return this;
 	};
 
 	Sprite.prototype.reverseVelocity = function (ticks) {
 		if (ticks === undefined)
 			ticks = 1;
-		if (this.xv !== 0)
+		if (this.xv !== 0) {
 			this.setX(this.x - this.xv * ticks);
-		if (this.yv !== 0)
+		}
+		if (this.yv !== 0) {
 			this.setY(this.y - this.yv * ticks);
-		if (this.rv !== 0)
+		}
+		if (this.rv !== 0) {
 			this.setAngle(this.angle - this.rv * ticks);
+		}
 		return this;
 	};
 
 	Sprite.prototype.applyXVelocity = function (ticks) {
 		if (ticks === undefined)
 			ticks = 1;
-		if (this.xv !== 0)
+		if (this.xv !== 0) {
 			this.setX(this.x + this.xv * ticks);
+		}
 	};
 
 	Sprite.prototype.reverseXVelocity = function (ticks) {
 		if (ticks === undefined)
 			ticks = 1;
-		if (this.xv !== 0)
+		if (this.xv !== 0) {
 			this.setX(this.x - this.xv * ticks);
+		}
 	};
 
 	Sprite.prototype.applyYVelocity = function (ticks) {
@@ -803,98 +790,124 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 	// Update methods
 
-	Sprite.prototype.webGLUpdate = function webGLUpdate() {
-		if (!this.texture) {
-			this.texture = new webgl.Texture(this);
-		}
-		this.texture.render(this.x, this.y);
-		return this;
-	};
-
 	Sprite.prototype.update = function updateDomProperties() {
 
 		if (this.layer.scene.disableUpdate)
 			return this;
 
-		// This is the CPU heavy function.
-		if (this.layer.useWebGL) {
-			return this.webGLUpdate();
-		}
-
-		var style = this.dom.style, trans;
+		var style = this.dom.style,
+			dirty = this._dirty,
+			trans;
 		// using Math.round to round integers before changing seems to improve a bit performances
-		if (this._x_before !== this._x_rounded) {
-			style.left = (this.x | 0) + 'px';
-		}
-		if (this._y_before !== this._y_rounded) {
-			style.top = (this.y | 0) + 'px';
-		}
+		// if (this._x_before !== this._x_rounded) {
+		// 	style.left = (this.x | 0) + 'px';
+		// }
+		// if (this._y_before !== this._y_rounded) {
+		// 	style.top = (this.y | 0) + 'px';
+		// }
 
 		// cache rounded positions, it's used to avoid unecessary update
 		this._x_before = this._x_rounded;
 		this._y_before = this._y_rounded;
 
-		if (!this.changed)
+		if (!this.changed) {
 			return this;
-
-		if (this._dirty.w) {
-			this.effectiveWidth = this.w * this.xscale;
-			style.width = (this.w | 0) + 'px';
 		}
-		if (this._dirty.h) {
-			this.effectiveHeight = this.h * this.yscale;
-			style.height = (this.h | 0) + 'px';
-		}
-		// translate and translate3d doesn't seems to offer any speedup
-		// in my tests.
-		if (this._dirty.xoffset || this._dirty.yoffset)
-			style.backgroundPosition = -(this.xoffset | 0) + 'px ' + -(this.yoffset | 0) + 'px';
 
-		if (this._dirty.opacity)
+		var boundsChanged = (dirty.w || dirty.h || dirty.x || dirty.y || dirty.xscale || dirty.yscale);
+		if (boundsChanged) {
+			this.calcBounds();
+		}
+
+		if (dirty.w) {
+			style.width = (Math.round(this.w) | 0) + 'px';
+		}
+		if (dirty.h) {
+			style.height = (Math.round(this.h) | 0) + 'px';
+		}
+		if (dirty.x) {
+			style.left = (Math.round(this.x) | 0) + 'px';
+		}
+		if (dirty.y) {
+			style.top = (Math.round(this.y) | 0) + 'px';
+		}
+
+		if (dirty.opacity) {
 			if ('opacity' in document.body.style) {
 				style.opacity = this.opacity;
 			} else {
 				style.filter = "alpha(opacity=" + this.opacity * 100 + ")";
 			}
+		}
 
-		if (this._dirty.color)
+		if (dirty.color) {
 			style.backgroundColor = this.color;
+		}
 
-		if (this._dirty.zindex)
+		if (dirty.zindex) {
 			style.zIndex = this.zindex;
+		}
 
-		if (this._dirty.backgroundRepeat) {
+		if (dirty.backgroundRepeat) {
 			style.backgroundRepeat = this.backgroundRepeat;
 		}
 
 		// those transformation have pretty bad perfs implication on Opera,
 		// don't update those values if nothing changed
-		if (this._dirty.xscale || this._dirty.yscale || this._dirty.angle) {
-			this.effectiveWidth = this.w * this.xscale;
-			this.effectiveHeight = this.h * this.yscale;
-			trans = "";
-			if (this.angle !== 0) {
+		if (dirty.angle || dirty.xscale || dirty.yscale) {
+			var trans = "";
+			if (dirty.angle && this.angle !== 0) {
 				trans += 'rotate(' + this.angle + 'rad) ';
 			}
-			if (this.xscale !== 1 || this.yscale !== 1) {
-				trans += ' scale(' + this.xscale + ', ' + this.yscale + ')';
+			if ((dirty.xscale && this.xscale !== 1) || 
+				(dirty.yscale || this.yscale !== 1)) {
+					trans += ["scale(",this.xscale, ',', this.yscale, ") "].join('');
 			}
 			style[sjs.tproperty] = trans;
-			// style[sjs.tproperty + '-origin'] = this.xTransformOrigin + " " + this.yTransformOrigin;
-			// style["TransformOrigin"] = this.xTransformOrigin + " " + this.yTransformOrigin;
 		}
+
+		if (dirty.image) {
+			style.backgroundImage = this.img ? 'url(' + this.img.src + ')' : "none";
+			style["TransformOrigin"] = this.img ? "center center" : "0 0";
+			style.backgroundRepeat = "no-repeat";
+			style.backgroundSize = "100% 100%";
+		}
+
 		// reset
 		this.changed = false;
 		this._dirty = {};
 		return this;
 	};
 
+	Sprite.prototype.getBoundsRect = function () {
+		return this._bounds;
+	}
 
 
+	Sprite.prototype.calcBounds = function () {
+		var bounds = {
+			x: this.x,
+			y: this.y,
+			w: this.w,
+			h: this.h
+		};
+		var diff;
+		if (this.xscale !== 1) {
+			diff = (bounds.w - bounds.w * this.xscale);
+			bounds.w -= diff;
+			bounds.x += diff / 2;
+		}
+		if (this.yscale !== 1) {
+			diff = (bounds.h - bounds.h * this.yscale);
+			bounds.h -= diff;
+			bounds.y += diff / 2;
+		}
+		return this._bounds = bounds;
+	}
 	// Other methods
 
 	Sprite.prototype.toString = function () {
-		return "Sprite(" + String(this.id) + ")";
+		return ["<Sprite> id: ", this.id, this.img ? ("image: " + this.img.src): ""].join(' ');
 	};
 
 	Sprite.prototype.onload = function (callback) {
@@ -903,41 +916,43 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		}
 	};
 
+
 	Sprite.prototype.loadImg = function (src, resetSize) {
 		// the image exact source value will change according to the
 		// hostname, this is useful to retain the original source value here.
-		var _loaded, there = this, img;
+		var _loaded, self = this, img;
 		this.src = src;
 		// check if the image is already in the cache
-		if (!sjs.spriteCache[src]) {
-			// if not we create the image in the cache
-			this.img = doc.createElement('img');
-			sjs.spriteCache[src] = { src: src, img: this.img, loaded: false, loading: true };
-			_loaded = false;
-		} else {
+		// if (!sjs.spriteCache[src]) {
+		// 	// if not we create the image in the cache
+		// 	this.img = doc.createElement('img');
+		// 	sjs.spriteCache[src] = { src: src, img: this.img, loaded: false, loading: true };
+		// 	_loaded = false;
+		// } else {
 			// if it's already there, we set img object and check if it's loaded
 			this.img = sjs.spriteCache[src].img;
 			_loaded = sjs.spriteCache[src].loaded;
-		}
+		// }
 
 		// actions to perform when the image is loaded
 		function imageReady(e) {
-			img = there.img;
+			img = self.img;
 			sjs.spriteCache[src].loaded = true;
-			there.imgLoaded = true;
-			if (there.layer) {
-				there.dom.style.backgroundImage = 'url(' + src + ')';
+			self.imgLoaded = true;
+			self._dirty.image = true;
+			self.imgNaturalWidth = img.width;
+			self.imgNaturalHeight = img.height;
+			if (!self.w || resetSize) {
+				self.setW(img.width);
 			}
-			there.imgNaturalWidth = img.width;
-			there.imgNaturalHeight = img.height;
-			if (there.w === null || resetSize)
-				there.setW(img.width);
-			if (there.h === null || resetSize)
-				there.setH(img.height);
-			there.onload();
+			if (!self.h || resetSize) {
+				self.setH(img.height);
+			}
+			self.onload();
 		}
-		if (_loaded)
+		if (_loaded) {
 			imageReady();
+		}
 		else {
 			_addEventListener(this.img, 'load', imageReady, false);
 			this.img.src = src;
@@ -946,77 +961,80 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 	};
 
 	Sprite.prototype.distance = function distance(x, y) {
+		var bounds = this.getBoundsRect();
 		// Return the distance between this sprite and the point (x, y) or a Sprite
 		if (typeof x === "number") {
-			return Math.sqrt(Math.pow(this.x + this.w / 2 - x, 2) +
-				Math.pow(this.y + this.h / 2 - y, 2));
+			return Math.sqrt(Math.pow(bounds.x + bounds.w / 2 - x, 2) +
+				Math.pow(bounds.y + bounds.h / 2 - y, 2));
 		} else {
-			return Math.sqrt(Math.pow(this.x + (this.w / 2) - (x.x + (x.w / 2)), 2) +
-				Math.pow(this.y + (this.h / 2) - (x.y + (x.h / 2)), 2));
+			var other = x.getBoundsRect();
+			return Math.sqrt(Math.pow(bounds.x + (bounds.w / 2) - (other.x + (other.w / 2)), 2) +
+				Math.pow(bounds.y + (bounds.h / 2) - (other.y + (other.h / 2)), 2));
 		}
 	};
 
 	Sprite.prototype.center = function center() {
-		return { x: this.x + this.w / 2, y: this.y + this.h / 2 };
+		var bounds = this.getBoundsRect();
+		return { x: bounds.x + bounds.w / 2, y: bounds.y + bounds.h / 2 };
 	};
 
 	// Fx
 
 	Sprite.prototype.explode2 = function explode(v, horizontal, layer) {
-		if (!layer)
-			layer = this.layer;
-		var props = { layer: layer, color: this.color };
+		layer = layer || this.layer;
+		var props = { layer: layer, color: this.color, src: this.src };
+		var bounds = this.getBoundsRect();
 		if (v === undefined) {
 			if (horizontal)
-				v = this.h >> 1;
+				v = bounds.h >> 1;
 			else
-				v = this.w >> 1;
+				v = bounds.w >> 1;
 		}
-		var s1 = layer.scene.Sprite(this.src, props);
-		var s2 = layer.scene.Sprite(this.src, props);
+		var s1 = layer.Sprite(props);
+		var s2 = layer.Sprite(props);
 		if (horizontal) {
-			s1.size(this.w, v);
-			s1.position(this.x, this.y);
-			s2.size(this.w, this.h - v);
+			s1.size(bounds.w, v);
+			s1.position(bounds.x, this.y);
+			s2.size(bounds.w, bounds.h - v);
 			s2.position(this.x, this.y + v);
 			s2.setYOffset(v);
 		} else {
-			s1.size(v, this.h);
-			s1.position(this.x, this.y);
-			s2.size(this.w - v, this.h);
-			s2.position(this.x + v, this.y);
+			s1.size(v, bounds.h);
+			s1.position(bounds.x, bounds.y);
+			s2.size(bounds.w - v, bounds.h);
+			s2.position(bounds.x + v, bounds.y);
 			s2.setXOffset(v);
 		}
 		return [s1, s2];
 	};
 
 	Sprite.prototype.explode4 = function explode(x, y, layer) {
+		var bounds = this.getBoundsRect();
 		if (x === undefined)
-			x = this.w >> 1;
+			x = bounds.w >> 1;
 		if (y === undefined)
-			y = this.h >> 1;
-		if (!layer)
-			layer = this.layer;
-		var props = { layer: layer, color: this.color };
+			y = bounds.h >> 1;
+		layer = layer || this.layer;
+		var props = { layer: layer, color: this.color, src: this.src };
 		// top left sprite, going counterclockwise
-		var s1 = layer.scene.Sprite(this.src, props),
-			s2 = layer.scene.Sprite(this.src, props),
-			s3 = layer.scene.Sprite(this.src, props),
-			s4 = layer.scene.Sprite(this.src, props);
+		var s1 = layer.Sprite(props),
+			s2 = layer.Sprite(props),
+			s3 = layer.Sprite(props),
+			s4 = layer.Sprite(props);
 
 		s1.size(x, y);
-		s1.position(this.x, this.y);
+		s1.position(bounds.x, bounds.y);
 
-		s2.size(this.w - x, y);
-		s2.position(this.x + x, this.y);
+		s2.size(bounds.w - x, y);
+		s2.position(bounds.x + x, bounds.y);
 		s2.offset(x, 0);
 
-		s3.size(this.w - x, this.h - y);
-		s3.position(this.x + x, this.y + y);
+		s3.size(bounds.w - x, bounds.h - y);
+		s3.position(bounds.x + x, bounds.y + y);
 		s3.offset(x, y);
 
-		s4.size(x, this.h - y);
-		s4.position(this.x, this.y + y);
+		s4.size(x, bounds.h - y);
+		s4.position(bounds.x, bounds.y + y);
 		s4.offset(0, y);
 
 		return [s1, s2, s3, s4];
@@ -1568,12 +1586,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 		this.useCanvas = false;
 
-		this.useWebGL = options.useWebGL;
-
 		this.name = name;
 		if (this.scene.layers[name] === undefined) {
 			this.scene.layers[name] = this;
-		} else {
+		} 
+		else {
 			if (sjs.debug) {
 				sjs.warning("A layer named " + name + " already exist.");
 			}
@@ -1595,7 +1612,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		if (!needToCreate) {
 			domH = domElement.height || domElement.style.height;
 			domW = domElement.width || domElement.style.width;
-		} 
+		}
 		else {
 			domH = false;
 			domW = false;
@@ -1635,12 +1652,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 	Layer.prototype.clear = function clear() {
 	};
 
-	Layer.prototype.Sprite = function (src, options) {
-		if (options)
+	Layer.prototype.Sprite = function (options) {
+		if (options) {
 			options.layer = this;
-		else
-			options = this;
-		return new Sprite(this.scene, src, options);
+		}
+		else {
+			options = { layer: this };
+		}
+		return new Sprite(this, options);
 	};
 
 	Layer.prototype.remove = function remove() {

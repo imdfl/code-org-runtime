@@ -42,13 +42,11 @@ function removeButtonName(current, name) {
 export class SpriteWrapper {
     constructor(world, x = 0, y) {
         this.world = world;
-        this._width = 0;
-        this._height = 0;
         this._isMouseUp = "";
         this._isMouseDown = "";
         this._isPressed = "";
         this._isMouseIn = false;
-        this.sprite = world.scene.Sprite();
+        this.sprite = world.scene.Sprite({ x, y });
         $(this.sprite.dom).data("sprite-wrapper", this);
         this.sprite.setX(x);
         this.sprite.setY(y);
@@ -206,18 +204,16 @@ export class SpriteWrapper {
         return this.sprite.yv;
     }
     set width(w) {
-        this._width = w;
-        this.sprite.size(w, this.height);
+        this.sprite.setW(w);
     }
     get width() {
-        return this._width;
+        return this.sprite.w;
     }
     get height() {
-        return this._height;
+        return this.sprite.h;
     }
     set height(h) {
-        this._height = h;
-        this.sprite.size(this.width, h);
+        this.sprite.setH(h);
     }
     setSize(width, height) {
         this.sprite.size(width, height);

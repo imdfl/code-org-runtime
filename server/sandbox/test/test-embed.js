@@ -2,20 +2,6 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
 (function ($, imagesPath) {
     $(() => {
         const World = createWorld(imagesPath);
-        const ticker = World.scene.Ticker(paint);
-        ticker.run();
-        function paint(t) {
-            try {
-                const f = eval("draw");
-                if (typeof f === "function") {
-                    World.preUpdate();
-                    f();
-                    World.postUpdate();
-                }
-            }
-            catch (e) {
-            }
-        }
         /************************* Begin client code ****************************** */
         playSound("2013-10-20_Preparation_2_-_David_Fesliyan.mp3", true);
         // TODO
@@ -29,15 +15,16 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
         //
         //
         //
-        var PLAYING = 2, FINALLOSE = 4, FINALWIN = 3, STARTING = 1, OPENING = 0, shotsNum = 1, shield = false, gameState = OPENING, bouns = false, ndnPowerUpTypes = ["doubleShot", "shield"], ndndActivePowerUps = [], startButton = false, openingDone, doubleShot = false, endMessage, rocketCap, gameSpeed = 1, allButtons = [], endReason, superShip = myCreateSuperShip("enemyBlack1_1", 10, 15), ndnSprites = [], ndnOpeningSprites = [], endSound = false, 
+        var ndnPowerUpTypes = ["doubleShot", "shield"], PLAYING = 2, FINALLOSE = 4, FINALWIN = 3, STARTING = 1, OPENING = 0, ndnBombs = [], ndnRockets = [], ndndActivePowerUps = [], allButtons = [], pauseButton = myCreateButton("animation_1", 300, 18);
+        var shotsNum = 1, shield = false, gameState = OPENING, bouns = false, startButton = false, openingDone, endMessage, rocketCap, gameSpeed = 1, endReason, superShip = myCreateSuperShip("enemyBlack1_1", 10, 15), ndnSprites = [], ndnOpeningSprites = [], endSound = false, 
         // defY = 65,
-        ndnBombs = [], ndnRockets = [], timer, superShipTimer, powerUpTimer, bombingCooldown, cooldownTimer, pauseButton = myCreateButton("animation_1", 300, 18), 
+        timer, superShipTimer, powerUpTimer, bombingCooldown, cooldownTimer, 
         // startSprite = myCreateButton ("animation_4", 300, 18),
         score = 0, currentLevel, totalScore = 0, player, pauseSymbol, high = 0, pauseIndicator = false;
         currentLevel = -1;
         function initLevel() {
             currentLevel++;
-            for (var i = 0; i < ndnSprites.length; i++) {
+            for (let i = 0; i < ndnSprites.length; i++) {
                 ndnSprites[i].destroy();
             }
             ndnSprites = [];
@@ -50,7 +37,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
                 createPlayer();
             }
             else {
-                player.destroy;
+                // player.destroy;
             }
             createSprites();
             gameState = PLAYING;
@@ -60,7 +47,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
         }
         function initFirstLevel() {
             currentLevel++;
-            for (var i = 0; i < ndnSprites.length; i++) {
+            for (let i = 0; i < ndnSprites.length; i++) {
                 ndnSprites[i].destroy();
             }
             ndnSprites = [];
@@ -81,7 +68,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             score = 0;
         }
         function myCreateSprite(name, x, y) {
-            var sprite = createSprite(x, y);
+            let sprite = createSprite(x, y);
             sprite.setAnimation(name);
             sprite.name = name;
             sprite.score = randomNumber(2, 11);
@@ -91,7 +78,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             return sprite;
         }
         function myCreateOpeningSprite(name, x, y) {
-            var sprite = createSprite(x, y);
+            let sprite = createSprite(x, y);
             sprite.setAnimation(name);
             sprite.name = name;
             sprite.scale = 0.25;
@@ -100,7 +87,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             return sprite;
         }
         function myCreateBomb(name, x, y) {
-            var sprite = createSprite(x, y);
+            let sprite = createSprite(x, y);
             sprite.setAnimation(name);
             sprite.name = name;
             sprite.scale = 0.3;
@@ -110,7 +97,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             return sprite;
         }
         function myCreateRocket(name, x, y) {
-            var sprite = createSprite(x, y);
+            let sprite = createSprite(x, y);
             sprite.setAnimation(name);
             sprite.name = name;
             sprite.scale = 0.3;
@@ -120,14 +107,14 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             return sprite;
         }
         function myCreatePlayer(name, x, y) {
-            var sprite = createSprite(x, y);
+            let sprite = createSprite(x, y);
             sprite.setAnimation(name);
             sprite.name = name;
             sprite.scale = 0.31;
             return sprite;
         }
         function myCreateSuperShip(name, x, y) {
-            var sprite = createSprite(x, y);
+            let sprite = createSprite(x, y);
             sprite.setAnimation(name);
             sprite.name = name;
             sprite.isDead = false;
@@ -137,13 +124,13 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             return sprite;
         }
         function myCreateButton(name, x, y) {
-            var sprite = createSprite(x, y);
+            let sprite = createSprite(x, y);
             sprite.setAnimation(name);
             sprite.scale = 0.31;
             return sprite;
         }
         function myCreatePowerUp(name, x, y, type) {
-            var sprite = createSprite(x, y);
+            let sprite = createSprite(x, y);
             sprite.setAnimation(name);
             sprite.name = name;
             sprite.scale = 0.3;
@@ -156,8 +143,8 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
         //==================================
         /// Begin buttons
         function createButton(options) {
-            var sprite = createSprite(options.x, options.y);
-            var len = options.text.length;
+            let sprite = createSprite(options.x, options.y);
+            let len = options.text.length;
             sprite.setAnimation("basic-button");
             sprite.width = len * 13;
             allButtons.push({
@@ -179,7 +166,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             }
         }
         function deleteButtonByCommand(cmd) {
-            for (var i = 0; i < allButtons.length; i++) {
+            for (let i = 0; i < allButtons.length; i++) {
                 if (allButtons[i].command === cmd) {
                     allButtons[i].sprite.destroy();
                     allButtons.splice(i, 1);
@@ -189,8 +176,8 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             }
         }
         function drawAndCheckButtons() {
-            var i;
-            var button;
+            let i;
+            let button;
             textSize(13);
             for (i = 0; i < allButtons.length; i++) {
                 button = allButtons[i];
@@ -210,7 +197,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             player = myCreatePlayer("playerShip1_green_1", 200, 342);
         }
         // function createPause() {
-        // 	var pause = my("animation_1", 200, 342);
+        // 	let pause = my("animation_1", 200, 342);
         // 	return pause;
         // }
         //function createStart(){
@@ -219,8 +206,8 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
         // startSprite.setAnimation("animation_4");
         //}
         function spritesGoDown(sprites) {
-            var sprite;
-            for (var i = 0; i < sprites.length; i++) {
+            let sprite;
+            for (let i = 0; i < sprites.length; i++) {
                 sprite = sprites[i];
                 sprite.velocityX = -sprite.velocityX;
                 //    sprite.x += sprite.velocityX;
@@ -232,17 +219,17 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             if (sprites.length === 0) {
                 return false;
             }
-            var lastUsed = sprites[0];
-            var sprite;
-            var sprite2;
-            var firstUsed = sprites[sprites.length - 1];
-            for (var i = 0; i < sprites.length; i++) {
+            let lastUsed = sprites[0];
+            let sprite;
+            let sprite2;
+            let firstUsed = sprites[sprites.length - 1];
+            for (let i = 0; i < sprites.length; i++) {
                 sprite = sprites[i];
                 if (sprite.x < lastUsed.x) {
                     lastUsed = sprite;
                 }
             }
-            for (var j = 0; j < sprites.length; j++) {
+            for (let j = 0; j < sprites.length; j++) {
                 sprite2 = sprites[j];
                 if (sprite2.x > firstUsed.x) {
                     firstUsed = sprite2;
@@ -251,8 +238,8 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             return (lastUsed.x < 0 || firstUsed.x > 400 || lastUsed.y < 0 || firstUsed.y > 400);
         }
         // function wallIsTouched(sprites) {
-        // 	var first = sprites[0];
-        // 	var last = sprites[sprites.length - 1];
+        // 	let first = sprites[0];
+        // 	let last = sprites[sprites.length - 1];
         // 	if (!first) {
         // 		return false;
         // 	}
@@ -260,7 +247,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
         // }
         function shooter() {
             if (cooldownTimer <= 0 && keyWentDown("space") && rocketCap > 0) {
-                for (var i = 0; i < shotsNum; i++) {
+                for (let i = 0; i < shotsNum; i++) {
                     myCreateRocket("jetpack_1", player.x + i * 10, player.y);
                 }
                 cooldownTimer += 140;
@@ -268,7 +255,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             }
         }
         function checkKeyboardCommands(sprites) {
-            var speedChange = 0;
+            let speedChange = 0;
             if (keyWentDown("up")) {
                 gameSpeed++;
                 speedChange = 5;
@@ -279,7 +266,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             }
             if (speedChange != 0) {
                 sprites.forEach(function (sprite) {
-                    var v = sprite.velocityX;
+                    let v = sprite.velocityX;
                     if (v > 0) {
                         v += speedChange;
                     }
@@ -299,13 +286,13 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             }
         }
         function fastanator(sprites) {
-            for (var i = 0; i < sprites.length; i++) {
+            for (let i = 0; i < sprites.length; i++) {
                 sprites[i].velocityX *= 1.05;
             }
         }
         function addSprite(sprites) {
-            var last = sprites[sprites.length - 1];
-            var sprite = myCreateSprite(last.name, last.x + 30, last.y);
+            let last = sprites[sprites.length - 1];
+            let sprite = myCreateSprite(last.name, last.x + 30, last.y);
             sprite.velocityX = last.velocityX;
         }
         function missOperator() {
@@ -317,11 +304,11 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             }
         }
         function floorReceiver(sprites) {
-            var x;
-            for (var i = 0; i < sprites.length; i++) {
+            let x;
+            for (let i = 0; i < sprites.length; i++) {
                 if (sprites[i].isTouching(floor)) {
                     x = sprites[i].x;
-                    var sprite = createSprite(x, 357);
+                    let sprite = createSprite(x, 357);
                     sprite.setAnimation("alienBlue_badge_1");
                     sprite.scale = 0.5;
                     setTimeout(function () {
@@ -337,8 +324,8 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             }
         }
         function enemyScore() {
-            var sprite;
-            for (var i = 0; i < ndnSprites.length; i++) {
+            let sprite;
+            for (let i = 0; i < ndnSprites.length; i++) {
                 sprite = ndnSprites[i];
                 fill("red");
                 ellipse(sprite.x, sprite.y, 10, 10);
@@ -357,26 +344,26 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             }
         }
         function createSprites() {
-            var defY = 65;
+            let defY = 65;
             function pickName() {
-                var names = ["enemyBlack3_1"];
+                let names = ["enemyBlack3_1"];
                 return names[0];
             }
-            for (var j = 0; j < 3; j++) {
-                for (var i = 0; i < 6; i++) {
+            for (let j = 0; j < 3; j++) {
+                for (let i = 0; i < 6; i++) {
                     myCreateSprite(pickName(), i * 30, defY);
                 }
                 defY += 30;
             }
         }
         function createOpeningSprites() {
-            var defY = 65;
+            let defY = 65;
             function pickName() {
-                var names = ["enemyBlack3_1"];
+                let names = ["enemyBlack3_1"];
                 return names[0];
             }
-            for (var j = 0; j < 3; j++) {
-                for (var i = 0; i < 6; i++) {
+            for (let j = 0; j < 3; j++) {
+                for (let i = 0; i < 6; i++) {
                     myCreateOpeningSprite(pickName(), i * 30, defY);
                 }
                 defY += 30;
@@ -387,7 +374,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             addSprite(i);
         }
         function bombDestroyer(sprite) {
-            for (var i = 0; i < ndnBombs.length; i++) {
+            for (let i = 0; i < ndnBombs.length; i++) {
                 if (sprite === ndnBombs[i]) {
                     ndnBombs.splice(i, 1);
                     sprite.destroy();
@@ -397,7 +384,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             return false;
         }
         function rocketDestroyer(sprite) {
-            for (var i = 0; i < ndnRockets.length; i++) {
+            for (let i = 0; i < ndnRockets.length; i++) {
                 if (sprite === ndnRockets[i]) {
                     ndnRockets.splice(i, 1);
                     sprite.destroy();
@@ -407,7 +394,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             return false;
         }
         function spriteDestroyer(sprite) {
-            for (var i = 0; i < ndnSprites.length; i++) {
+            for (let i = 0; i < ndnSprites.length; i++) {
                 if (sprite === ndnSprites[i]) {
                     playSound("sound://category_explosion/air_explode_bonus_5.mp3", false);
                     sprite.setAnimation("powerup_wings_1");
@@ -436,14 +423,14 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             }
         }
         function Bombing(sprites) {
-            var sprite = randomNumber(0, sprites.length - 1);
+            let sprite = randomNumber(0, sprites.length - 1);
             if (bombingCooldown < 29 && bombingCooldown > 26) {
                 myCreateBomb("animation_3", sprites[sprite].x, sprites[sprite].y + 30);
                 bombingCooldown = 0;
             }
         }
         // function Bombing(sprites) {
-        // 	for (var i = 0; i < sprites.length; i++) {
+        // 	for (let i = 0; i < sprites.length; i++) {
         // 		if (timer2 < 29 & timer2 > 26) {
         // 			myCreateBomb("animation_3", ndnSprites[i].x, ndnSprites[i].y + 30);
         // 			timer2 = 0;
@@ -451,23 +438,23 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
         // 	}
         // }
         function createFloor() {
-            var box = createSprite(200, 378);
+            let box = createSprite(200, 378);
             box.setAnimation("animation_2");
             box.scale = 4;
             return box;
         }
-        //first of all we check if it was NOT touched, then we double loop and check if touched
+        // first of all we check if it was NOT touched, then we double loop and check if touched
         function checkIfSpritesShot(enemies, rockets) {
-            var enemy;
-            var rocket;
-            for (var z = 0; z < rockets.length; z++) {
+            let enemy;
+            let rocket;
+            for (let z = 0; z < rockets.length; z++) {
                 rocket = rockets[z];
                 if (rocket.isTouching(superShip)) {
                     superShipDestroyer();
                     rocketDestroyer(rockets[z]);
                 }
                 else {
-                    for (var i = 0; i < enemies.length; i++) {
+                    for (let i = 0; i < enemies.length; i++) {
                         enemy = enemies[i];
                         if (rocket.isTouching(enemy)) {
                             spriteDestroyer(enemies[i]);
@@ -481,8 +468,8 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             return false;
         }
         function checkIfRocketGone(rockets) {
-            var rocket;
-            for (var z = 0; z < rockets.length; z++) {
+            let rocket;
+            for (let z = 0; z < rockets.length; z++) {
                 rocket = rockets[z];
                 if (rocket.y < 0) {
                     rocketDestroyer(rocket);
@@ -490,12 +477,12 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             }
         }
         function checkIfSpritesClicked(sprites) {
-            var destroyed = false;
-            var sprite;
+            let destroyed = false;
+            let sprite;
             if (!mouseWentDown("leftButton")) {
                 return false;
             }
-            for (var i = 0; i < sprites.length; i++) {
+            for (let i = 0; i < sprites.length; i++) {
                 sprite = sprites[i];
                 if (mousePressedOver(sprite)) {
                     destroyed = spriteDestroyer(sprite);
@@ -546,7 +533,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             text("Rockets left", 100, 5, 200, 100);
             text(rocketCap, 100, 15, 200, 100);
         }
-        var floor = createFloor();
+        let floor = createFloor();
         scoreGet();
         highScorer();
         //createPause();
@@ -572,7 +559,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             }
         }
         function spaceInvaders(sprites) {
-            var sprite;
+            let sprite;
             sprite = sprites[0];
             if (sprite && sprite.y >= 322) {
                 endGame("bish bash won. NOOOOOOOOOO!!!!!!!", "they invaded your space", false);
@@ -604,11 +591,11 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             }
         }
         function damageControl(torpedos) {
-            var torpedo;
-            for (var i = 0; i < torpedos.length; i++) {
+            let torpedo;
+            for (let i = 0; i < torpedos.length; i++) {
                 torpedo = torpedos[i];
                 if (torpedo.isTouching(player)) {
-                    // torpedo.isTouching(player);
+                    torpedo.isTouching(player);
                     if (shield === false) {
                         player.destroy();
                         player = null;
@@ -633,7 +620,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             }
         }
         function pauseSprites(rockets, bombs, enemies, pauseIt) {
-            var i;
+            let i;
             for (i = 0; i < rockets.length; i++) {
                 pauseSprite(rockets[i], pauseIt);
             }
@@ -664,8 +651,8 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             }
         }
         function theDeccelerator(sprites) {
-            var sprite;
-            for (var i = 0; i < sprites.length; i++) {
+            let sprite;
+            for (let i = 0; i < sprites.length; i++) {
                 sprite = sprites[i];
                 sprite.oldXSpeed = sprite.velocityX;
                 sprite.oldYSpeed = sprite.velocityY;
@@ -673,8 +660,8 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             }
         }
         function theReAccelerator(sprites) {
-            var sprite;
-            for (var i = 0; i < sprites.length; i++) {
+            let sprite;
+            for (let i = 0; i < sprites.length; i++) {
                 sprite = sprites[i];
                 sprite.velocityX = sprite.oldXSpeed;
                 sprite.velocityY = sprite.oldYSpeed;
@@ -709,7 +696,6 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             }
         }
         function openingScreen() {
-            checkWall(ndnOpeningSprites);
             if (!startButton) {
                 createOpeningSprites();
                 createButton({
@@ -721,6 +707,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
                 });
                 startButton = true;
             }
+            checkWall(ndnOpeningSprites);
             background("black");
             drawSprites();
             drawAndCheckButtons();
@@ -735,7 +722,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             }
         }
         function powerDefiner(sprites) {
-            for (var i = 0; i < sprites.length; i++) {
+            for (let i = 0; i < sprites.length; i++) {
                 if (!sprites[i].isTouching(player)) {
                     continue;
                 }
@@ -764,7 +751,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
                 return openingScreen();
             }
             if (gameState === STARTING) {
-                for (var i = 0; i < ndnOpeningSprites.length; i++) {
+                for (let i = 0; i < ndnOpeningSprites.length; i++) {
                     ndnOpeningSprites[i].destroy();
                 }
                 ndnOpeningSprites = [];
@@ -865,7 +852,7 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
             // }
         }
         function highScorer() {
-            var newScore = score;
+            let newScore = score;
             if ((high === 0) || (newScore < high)) {
                 setKeyValue("highScore2", newScore, function () {
                     console.log(newScore + " is bigger than " + high + ". Updated highScore");
@@ -877,6 +864,21 @@ import { createWorld, createSprite, fill, rect, ellipse, text, textSize, backgro
                 high = value || 0;
             });
         }
+        function paint(t) {
+            try {
+                const f = eval("draw");
+                if (typeof f === "function") {
+                    World.preUpdate();
+                    f();
+                    World.postUpdate();
+                }
+            }
+            catch (e) {
+            }
+        }
+        const ticker = World.scene.Ticker(paint);
+        ticker.run();
     });
+    /**************** End client code  */
 }(window.jQuery, "/userimages/nadan"));
 //# sourceMappingURL=test-embed.js.map

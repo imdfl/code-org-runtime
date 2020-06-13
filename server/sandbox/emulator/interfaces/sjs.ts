@@ -7,6 +7,13 @@
 export type SJSImageCallback = () => any;
 export type SJSTickCallback = (ticker: ISJSTicker) => any;
 
+export interface ISJSRect {
+	x: number;
+	y: number;
+	w: number;
+	h: number;
+}
+
 export interface ISJSSceneOptions {
 	parent: Element;
 
@@ -121,7 +128,7 @@ export interface ISJSSprite {
 	update(): any;
 
 	/**
-	 * Change the image sprite.
+	 * Change the image sprite. Must be called after you've loaded the image through world.loadImages
 	 * @param source new image source.
 	 * @param resetSize if true the size of the sprite will be reset by the new image.
 	 */
@@ -286,6 +293,8 @@ export interface ISJSSprite {
 	setVisible(v: boolean): void;
 	isVisible(): boolean;
 
+	getBoundsRect(): ISJSRect;
+
 }
 
 export interface ISJSLayerOptions {
@@ -309,6 +318,9 @@ export interface ISJSLayer {
 export interface ISJSSpriteOptions {
 	layer: ISJSLayer;
 	color: string;
+	x: number;
+	y: number;
+	src: string;
 }
 
 export interface ISJSTickerOptions {
@@ -359,7 +371,7 @@ export interface ISJSScene {
 	/**
 	 *  Create a Sprite object, see the Sprite section.
 	 */
-	Sprite(source?: string, layer?: ISJSLayer, options?: Partial<ISJSSpriteOptions>): ISJSSprite;
+	Sprite(options: Partial<ISJSSpriteOptions>): ISJSSprite;
 	/**
 	 *  Create a Ticker object for this scene or reset the previous one.
 	 */

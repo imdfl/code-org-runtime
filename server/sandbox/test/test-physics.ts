@@ -26,7 +26,7 @@ export class Tester {
 			}
 			this.display = jQuery('#display');
 
-			const bg = scene.Sprite();
+			const bg = scene.Sprite(null);
 			bg.position(0, 600 - 32);
 			bg.size(600, 20);
 			bg.setColor('#999');
@@ -36,7 +36,7 @@ export class Tester {
 			const crates: Array<ISJSSprite> = this.crates = [];
 
 			for (let i = 0; i < 120; i++) {
-				const sp = scene.Sprite('img/crate.png');
+				const sp = scene.Sprite({src: 'img/crate.png' });
 				sp.move(32 + (i % 12) * 35, (i / 12.0 | 0) * 50);
 				sp.update();
 				crates.push(sp);

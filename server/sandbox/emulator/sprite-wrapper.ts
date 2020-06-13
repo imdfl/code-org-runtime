@@ -50,8 +50,6 @@ export class SpriteWrapper {
 	private static readonly _allSprites: Array<SpriteWrapper> = [];
 	private sprite: ISJSSprite;
 	private _name: string;
-	private _width = 0;
-	private _height = 0;
 
 	private _isMouseUp = "";
 	private _isMouseDown = "";
@@ -91,7 +89,7 @@ export class SpriteWrapper {
 	}
 
 	public constructor(private world: NoWorld, x: number = 0, y: number) {
-		this.sprite = world.scene.Sprite();
+		this.sprite = world.scene.Sprite({ x, y});
 		$(this.sprite.dom).data("sprite-wrapper", this);
 		this.sprite.setX(x);
 		this.sprite.setY(y);
@@ -250,21 +248,19 @@ export class SpriteWrapper {
 	}
 
 	public set width(w: number) {
-		this._width = w;
-		this.sprite.size(w, this.height);
+		this.sprite.setW(w);
 	}
 
 	public get width(): number {
-		return this._width;
+		return this.sprite.w;
 	}
 
 	public get height(): number {
-		return this._height;
+		return this.sprite.h;
 	}
 
 	public set height(h: number) {
-		this._height = h;
-		this.sprite.size(this.width, h);
+		this.sprite.setH(h);
 	}
 
 	public setSize(width: number, height: number) {
